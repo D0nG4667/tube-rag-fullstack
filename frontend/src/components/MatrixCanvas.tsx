@@ -7,10 +7,17 @@ import type * as THREE from "three";
 
 interface ParticleFieldProps {
 	selectedVideoId?: string;
+	isFocused?: boolean;
+	active?: boolean;
 }
 
-function ParticleField({ selectedVideoId }: ParticleFieldProps) {
+function ParticleField({
+	selectedVideoId,
+	isFocused = false,
+	active = false,
+}: ParticleFieldProps) {
 	const pointsRef = useRef<THREE.Points>(null);
+	const lightRef = useRef<THREE.PointLight>(null);
 	const mouseRef = useRef({ x: 0, y: 0 });
 	const zoomOffsetRef = useRef({ z: 0 });
 
@@ -33,6 +40,18 @@ function ParticleField({ selectedVideoId }: ParticleFieldProps) {
 			{ z: 0, duration: 1.5, ease: "power2.out" },
 		);
 	}, [selectedVideoId]);
+
+	// Animate light intensity using GSAP directly on three.js light instance
+	useEffect(() => {
+		if (!lightRef.current) return;
+		const baseIntensity = active ? 3.5 : 1.5;
+		const targetIntensity = baseIntensity * (isFocused ? 2.5 : 1.0);
+		gsap.to(lightRef.current, {
+			intensity: targetIntensity,
+			duration: 0.8,
+			ease: "power2.out",
+		});
+	}, [isFocused, active]);
 
 	// Generate random positions and colors for 250 semantic data node particles
 	const [positions, colors] = useMemo(() => {
@@ -72,10 +91,10 @@ function ParticleField({ selectedVideoId }: ParticleFieldProps) {
 			posAttribute.needsUpdate = true;
 		}
 
-		// Dynamic mouse parallax camera orbit lerp
-		const targetX = mouseRef.current.x * 1.5;
-		const targetY = mouseRef.current.y * 1.2;
-		const targetZ = 5 + zoomOffsetRef.current.z;
+		// Dynamic mouse parallax camera orbit lerp (tightened focus tracking when input is active)
+		const targetX = mouseRef.current.x * (isFocused ? 0.8 : 1.5);
+		const targetY = mouseRef.current.y * (isFocused ? 0.6 : 1.2);
+		const targetZ = (isFocused ? 3.5 : 5.0) + zoomOffsetRef.current.z;
 
 		state.camera.position.x += (targetX - state.camera.position.x) * 0.05;
 		state.camera.position.y += (targetY - state.camera.position.y) * 0.05;
@@ -84,31 +103,41 @@ function ParticleField({ selectedVideoId }: ParticleFieldProps) {
 	});
 
 	return (
-		<points ref={pointsRef}>
-			<bufferGeometry>
-				<bufferAttribute attach="attributes-position" args={[positions, 3]} />
-				<bufferAttribute attach="attributes-color" args={[colors, 3]} />
-			</bufferGeometry>
-			<pointsMaterial
-				size={0.08}
-				vertexColors
-				transparent
-				opacity={0.8}
-				sizeAttenuation={true}
-				depthWrite={false}
+		<>
+			<pointLight
+				ref={lightRef}
+				position={[2, 3, 2]}
+				intensity={active ? 3.5 : 1.5}
+				color={active ? "#06b6d4" : "#7c3aed"}
 			/>
-		</points>
+			<points ref={pointsRef}>
+				<bufferGeometry>
+					<bufferAttribute attach="attributes-position" args={[positions, 3]} />
+					<bufferAttribute attach="attributes-color" args={[colors, 3]} />
+				</bufferGeometry>
+				<pointsMaterial
+					size={0.08}
+					vertexColors
+					transparent
+					opacity={0.8}
+					sizeAttenuation={true}
+					depthWrite={false}
+				/>
+			</points>
+		</>
 	);
 }
 
 interface MatrixCanvasProps {
 	active?: boolean;
 	selectedVideoId?: string;
+	isFocused?: boolean;
 }
 
 export default function MatrixCanvas({
 	active = false,
 	selectedVideoId,
+	isFocused = false,
 }: MatrixCanvasProps) {
 	return (
 		<div className="fixed inset-0 -z-10 bg-zinc-950">
@@ -117,13 +146,11 @@ export default function MatrixCanvas({
 				gl={{ antialias: true }}
 			>
 				<ambientLight intensity={0.4} />
-				{/* Neon point light shifting colors when ingestion transitions */}
-				<pointLight
-					position={[2, 3, 2]}
-					intensity={active ? 3.5 : 1.5}
-					color={active ? "#06b6d4" : "#7c3aed"}
+				<ParticleField
+					selectedVideoId={selectedVideoId}
+					isFocused={isFocused}
+					active={active}
 				/>
-				<ParticleField selectedVideoId={selectedVideoId} />
 			</Canvas>
 		</div>
 	);

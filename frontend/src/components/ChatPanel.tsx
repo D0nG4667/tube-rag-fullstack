@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Send, Loader2, Sparkles, Eye, Play } from "lucide-react";
+import { motion } from "framer-motion";
+import SpotlightPanel from "./SpotlightPanel";
 
 interface SourceChunk {
 	chunk_id: string;
@@ -21,9 +23,14 @@ interface Message {
 interface ChatPanelProps {
 	videoId: string;
 	onSeek: (seconds: number) => void;
+	onFocusChange?: (focused: boolean) => void;
 }
 
-export default function ChatPanel({ videoId, onSeek }: ChatPanelProps) {
+export default function ChatPanel({
+	videoId,
+	onSeek,
+	onFocusChange,
+}: ChatPanelProps) {
 	const [messages, setMessages] = useState<Message[]>([
 		{
 			role: "assistant",
@@ -123,10 +130,13 @@ export default function ChatPanel({ videoId, onSeek }: ChatPanelProps) {
 			}
 
 			parts.push(
-				<button
+				<motion.button
 					key={`${matchIndex}-${seconds}`}
 					type="button"
 					onClick={() => onSeek(seconds)}
+					whileHover={{ scale: 1.08 }}
+					whileTap={{ scale: 0.95 }}
+					transition={{ type: "spring", stiffness: 400, damping: 10 }}
 					onMouseEnter={(e) => {
 						if (slideImageUrl) {
 							setHoveredSlideUrl(slideImageUrl);
@@ -153,7 +163,7 @@ export default function ChatPanel({ videoId, onSeek }: ChatPanelProps) {
 					<span>
 						{type} @ {timeStr}
 					</span>
-				</button>,
+				</motion.button>,
 			);
 
 			lastIndex = matchIndex + fullMatch.length;
@@ -167,7 +177,7 @@ export default function ChatPanel({ videoId, onSeek }: ChatPanelProps) {
 	};
 
 	return (
-		<div className="flex flex-col h-full rounded-2xl backdrop-blur-2xl bg-zinc-950/20 border border-zinc-800/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] overflow-hidden relative">
+		<SpotlightPanel className="flex flex-col h-full rounded-2xl backdrop-blur-2xl bg-zinc-950/20 border border-zinc-800/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] overflow-hidden relative">
 			{/* Slide Image Hover Preview Overlay */}
 			{hoveredSlideUrl && (
 				<div
@@ -224,18 +234,18 @@ export default function ChatPanel({ videoId, onSeek }: ChatPanelProps) {
 						>
 							{msg.role === "user"
 								? msg.text
-								: renderMessageText(msg.text, msg.sources)}
+								: renderMessageText(msg.text, msg.sources || [])}
 						</div>
 					</div>
 				))}
 				{loading && (
-					<div className="flex gap-3 self-start items-center">
-						<div className="w-7 h-7 rounded-full bg-accent-cyan/20 border border-accent-cyan/40 text-accent-cyan flex items-center justify-center shrink-0">
-							<Loader2 className="w-3.5 h-3.5 animate-spin" />
+					<div className="flex justify-start">
+						<div className="bg-zinc-900/60 text-zinc-300 border border-zinc-800/50 rounded-2xl px-4 py-3 flex items-center gap-2">
+							<Loader2 className="w-4 h-4 animate-spin text-accent-cyan" />
+							<span className="text-xs font-semibold text-zinc-400">
+								Retrieving segments & generating grounded answer...
+							</span>
 						</div>
-						<span className="text-xs text-zinc-500 italic">
-							TubeRAG is reasoning...
-						</span>
 					</div>
 				)}
 				<div ref={chatEndRef} />
@@ -250,6 +260,8 @@ export default function ChatPanel({ videoId, onSeek }: ChatPanelProps) {
 					type="text"
 					value={input}
 					onChange={(e) => setInput(e.target.value)}
+					onFocus={() => onFocusChange?.(true)}
+					onBlur={() => onFocusChange?.(false)}
 					placeholder={
 						videoId
 							? "Ask about slide decks or code screens..."
@@ -266,6 +278,6 @@ export default function ChatPanel({ videoId, onSeek }: ChatPanelProps) {
 					<Send className="w-4 h-4" />
 				</button>
 			</form>
-		</div>
+		</SpotlightPanel>
 	);
 }

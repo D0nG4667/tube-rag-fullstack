@@ -20,6 +20,36 @@ export default function Dashboard() {
 	const [selectedVideo, setSelectedVideo] = useState<VideoNode | null>(null);
 	const playerRef = useRef<VideoPlayerRef>(null);
 
+	const [splitWidth, setSplitWidth] = useState(50); // default 50% split width
+	const [isDragging, setIsDragging] = useState(false);
+	const [isChatFocused, setIsChatFocused] = useState(false);
+
+	const handleMouseDown = (e: React.MouseEvent) => {
+		e.preventDefault();
+		setIsDragging(true);
+	};
+
+	useEffect(() => {
+		if (!isDragging) return;
+
+		const handleMouseMove = (e: MouseEvent) => {
+			const percentage = (e.clientX / window.innerWidth) * 100;
+			// Clamp split pane limits between 30% and 70%
+			setSplitWidth(Math.max(30, Math.min(70, percentage)));
+		};
+
+		const handleMouseUp = () => {
+			setIsDragging(false);
+		};
+
+		window.addEventListener("mousemove", handleMouseMove);
+		window.addEventListener("mouseup", handleMouseUp);
+		return () => {
+			window.removeEventListener("mousemove", handleMouseMove);
+			window.removeEventListener("mouseup", handleMouseUp);
+		};
+	}, [isDragging]);
+
 	// Fetch ingested videos list
 	const fetchVideos = useCallback(async () => {
 		try {
@@ -117,6 +147,7 @@ export default function Dashboard() {
 			<MatrixCanvas
 				active={hasActiveJob}
 				selectedVideoId={selectedVideo?.id || ""}
+				isFocused={isChatFocused}
 			/>
 
 			{/* Collapsible Left drawer control */}
@@ -165,9 +196,15 @@ export default function Dashboard() {
 				</header>
 
 				{/* Viewport & chat splits */}
-				<div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0 overflow-hidden">
+				<div
+					className="flex-1 flex gap-6 min-h-0 overflow-hidden relative"
+					style={{ userSelect: isDragging ? "none" : "auto" }}
+				>
 					{/* Left panel: player container */}
-					<div className="flex flex-col gap-4 min-h-0">
+					<div
+						className="flex flex-col gap-4 min-h-0"
+						style={{ width: `${splitWidth}%` }}
+					>
 						<div className="glass-panel p-4 rounded-xl flex-1 flex flex-col justify-center min-h-0">
 							<span className="text-xs text-zinc-500 font-semibold tracking-widest mb-3 block">
 								VIDEO PLAYER ENGINE
@@ -179,9 +216,28 @@ export default function Dashboard() {
 						</div>
 					</div>
 
+					{/* Resizer Handle Bar */}
+					<div
+						onMouseDown={handleMouseDown}
+						className={`w-1 cursor-col-resize h-full rounded transition-all duration-150 relative self-stretch flex items-center justify-center ${
+							isDragging
+								? "bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]"
+								: "bg-zinc-800/40 hover:bg-zinc-700/60"
+						}`}
+					>
+						<div className="w-4 h-8 rounded border border-zinc-800/80 bg-zinc-950/90 flex items-center justify-center gap-0.5 z-20">
+							<div className="w-0.5 h-3 bg-zinc-600" />
+							<div className="w-0.5 h-3 bg-zinc-600" />
+						</div>
+					</div>
+
 					{/* Right panel: Agentic chat module */}
-					<div className="flex flex-col min-h-0">
-						<ChatPanel videoId={selectedVideo?.id || ""} onSeek={handleSeek} />
+					<div className="flex flex-col min-h-0 flex-1">
+						<ChatPanel
+							videoId={selectedVideo?.id || ""}
+							onSeek={handleSeek}
+							onFocusChange={setIsChatFocused}
+						/>
 					</div>
 				</div>
 			</div>
