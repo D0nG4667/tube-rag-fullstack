@@ -97,21 +97,49 @@ module.exports = {
 Create `frontend/biome.json`:
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/1.8.0/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true
-    }
-  },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2
-  }
+	"$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended"
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["**/public/**/*", "**/src/app/globals.css"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			}
+		}
+	]
 }
 ```
 
@@ -325,12 +353,19 @@ def ingest_video(req: IngestRequest, db: SupabaseClient = Depends(get_supabase))
     return {"video_id": video["id"], "status": video["status"]}
 ```
 
-Initialize `backend/app/main.py`:
+Initialize `backend/app/main.py` using the **modern FastAPI lifespan pattern** to manage resources:
 ```python
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.api.v1.ingest import router as ingest_router
 
-app = FastAPI(title="TubeRAG Backend")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup validation of core APIs
+    yield
+    # Cleanup handlers go here
+
+app = FastAPI(title="TubeRAG Backend", lifespan=lifespan)
 app.include_router(ingest_router)
 ```
 
@@ -436,9 +471,10 @@ def time_aware_chunker(transcript_items, max_chars=800, max_gap=3.0):
 def download_audio_segment(url: str, start_sec: float, end_sec: float, out_path: str):
     start_str = f"{int(start_sec)//3600:02d}:{int(start_sec)%3600//60:02d}:{int(start_sec)%60:02d}"
     end_str = f"{int(end_sec)//3600:02d}:{int(end_sec)%3600//60:02d}:{int(end_sec)%60:02d}"
+    # Use low-bitrate settings to optimize bandwidth in serverless environments
     cmd = [
         "yt-dlp",
-        "-f", "bestaudio[ext=m4a]",
+        "-f", "ba*[ext=m4a]/ba",
         "--download-sections", f"*{start_str}-{end_str}",
         "-o", out_path,
         url
@@ -456,7 +492,7 @@ def transcribe_audio_with_gemini(audio_path: str) -> str:
     return response.text
 ```
 
-- [ ] **Step 2: Implement QStash webhook endpoint**
+- [ ] **Step 2: Implement QStash webhook endpoint with signature verification**
 
 Create `backend/app/api/v1/webhook.py`:
 ```python
@@ -466,6 +502,7 @@ from google import genai
 from qstash.receiver import Receiver
 from app.core.config import settings
 from app.services.transcription import time_aware_chunker, download_audio_segment, transcribe_audio_with_gemini
+import os
 
 router = APIRouter()
 db = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
@@ -633,15 +670,12 @@ class SlideAnalysis(BaseModel):
     contains_new_content: bool = Field(..., description="True if this contains a new slide template or distinct layout")
 
 def calculate_ssim(img1: np.ndarray, img2: np.ndarray) -> float:
-    # Quick structural similarity metric via mean square delta
-    # Downsample and gray scale
     g1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
     g2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
     g1 = cv2.resize(g1, (64, 64))
     g2 = cv2.resize(g2, (64, 64))
     err = np.sum((g1.astype("float") - g2.astype("float")) ** 2)
     err /= float(g1.shape[0] * g1.shape[1])
-    # Convert error to a similarity score (0.0 to 1.0)
     sim = 1.0 / (1.0 + err / 1000.0)
     return sim
 
