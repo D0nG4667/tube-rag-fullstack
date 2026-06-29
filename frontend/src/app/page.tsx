@@ -42,24 +42,24 @@ export default function Dashboard() {
         // Use default demo mock list if database is empty
         const mockList = [
           {
-            id: 'mock-id-1',
-            youtube_id: 'dQw4w9WgXcQ',
-            title: 'Rick Astley - Never Gonna Give You Up (Official Music Video)',
-            status: 'completed',
+            id: "00000000-0000-0000-0000-000000000001",
+            youtube_id: "dQw4w9WgXcQ",
+            title: "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+            status: "completed",
           },
         ]
         setVideos(mockList)
         setSelectedVideo((current) => current || mockList[0])
       }
     } catch (err) {
-      console.error('Error fetching videos:', err)
+      console.error("Error fetching videos:", err)
       // Fallback fallback mock list if Supabase config is missing
       const mockList = [
         {
-          id: 'mock-id-1',
-          youtube_id: 'dQw4w9WgXcQ',
-          title: 'Rick Astley - Never Gonna Give You Up (Official Music Video)',
-          status: 'completed',
+          id: "00000000-0000-0000-0000-000000000001",
+          youtube_id: "dQw4w9WgXcQ",
+          title: "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+          status: "completed",
         },
       ]
       setVideos(mockList)
