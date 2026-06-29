@@ -131,12 +131,26 @@ export default function Dashboard() {
               TubeRAG / RAG Viewport Workspace
             </h1>
           </div>
-          {selectedVideo && (
-            <div className="flex items-center gap-2 text-xs bg-zinc-900/60 px-3 py-1 rounded border border-zinc-800/80">
-              <Library className="w-3.5 h-3.5 text-accent-cyan" />
-              <span className="font-mono text-zinc-400">ACTIVE YT ID: {selectedVideo.youtube_id}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {selectedVideo && (
+              <div className="flex items-center gap-2 text-xs bg-zinc-900/60 px-3 py-1 rounded border border-zinc-800/80">
+                <Library className="w-3.5 h-3.5 text-accent-cyan" />
+                <span className="font-mono text-zinc-400">ACTIVE YT ID: {selectedVideo.youtube_id}</span>
+              </div>
+            )}
+            <a
+              href={process.env.NEXT_PUBLIC_COFFEE_URL || "https://sociabuzz.com/gabcares/support"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-950/20 text-cyan-400 hover:bg-cyan-950/40 hover:shadow-[0_0_12px_rgba(6,182,212,0.3)] transition-all duration-300"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+              </span>
+              Buy me a coffee
+            </a>
+          </div>
         </header>
 
         {/* Viewport & chat splits */}
