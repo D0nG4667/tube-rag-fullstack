@@ -276,20 +276,62 @@ git commit -m "db: create tables, vector schemas, and rrf hybrid search function
 
 Create `backend/app/core/config.py`:
 ```python
-import os
-from pydantic_settings import BaseSettings
+import logging
+import sys
+from typing import Self
+from pydantic import Field, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger("tuberag.config")
+logging.basicConfig(level=logging.INFO)
 
 class Settings(BaseSettings):
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
-    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
-    QSTASH_TOKEN: str = os.getenv("QSTASH_TOKEN", "")
-    QSTASH_CURRENT_SIGNING_KEY: str = os.getenv("QSTASH_CURRENT_SIGNING_KEY", "")
-    QSTASH_NEXT_SIGNING_KEY: str = os.getenv("QSTASH_NEXT_SIGNING_KEY", "")
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    BACKEND_URL: str = os.getenv("BACKEND_URL", "http://localhost:8000")
+    APP_NAME: str = Field(default="TubeRAG", description="The name of the application")
+    ENV: str = Field(default="development", description="Application runtime environment")
+    SUPABASE_URL: str = Field(default="https://placeholder-project.supabase.co", description="Supabase project API endpoint URL")
+    SUPABASE_KEY: str = Field(default="placeholder-key", description="Supabase API key")
+    DATABASE_URL: str = Field(default="postgresql://postgres:postgres@localhost:5432/postgres", description="PostgreSQL connection string")
+    QSTASH_TOKEN: str | None = Field(default=None, description="Upstash QStash API access token")
+    QSTASH_CURRENT_SIGNING_KEY: str | None = Field(default=None, description="Upstash QStash current signing key")
+    QSTASH_NEXT_SIGNING_KEY: str | None = Field(default=None, description="Upstash QStash next signing key")
+    GEMINI_API_KEY: str | None = Field(default=None, description="Google Gemini API access key")
+    BACKEND_URL: str = Field(default="http://localhost:8000", description="Backend public server URL")
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    @property
+    def is_testing(self) -> bool:
+        return self.ENV.lower() == "testing" or "pytest" in sys.modules
+
+    @model_validator(mode="after")
+    def validate_runtime_credentials(self) -> Self:
+        if self.is_testing:
+            return self
+        missing = []
+        if not self.SUPABASE_URL or "placeholder" in self.SUPABASE_URL:
+            missing.append("SUPABASE_URL")
+        if not self.SUPABASE_KEY or "placeholder" in self.SUPABASE_KEY:
+            missing.append("SUPABASE_KEY")
+        if not self.DATABASE_URL or "localhost" in self.DATABASE_URL:
+            missing.append("DATABASE_URL")
+        if not self.GEMINI_API_KEY:
+            missing.append("GEMINI_API_KEY")
+        if missing:
+            logger.warning(f"Missing configuration: {', '.join(missing)}")
+        return self
+
+    def log_settings(self) -> None:
+        masked = {k: ("********" if any(s in k.lower() for s in ["key", "token", "url", "dsn"]) else v) for k, v in self.model_dump().items()}
+        logger.info(f"Loaded Settings: {masked}")
 
 settings = Settings()
+if not settings.is_testing:
+    settings.log_settings()
 ```
 
 - [ ] **Step 2: Write main FastAPI router and Ingest API endpoint**
@@ -298,8 +340,8 @@ Create `backend/app/api/v1/ingest.py`:
 ```python
 import re
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, HttpUrl
-from qstash import Client as QStashClient
+from pydantic import BaseModel
+from qstash import QStash
 from supabase import create_client, Client as SupabaseClient
 from app.core.config import settings
 
@@ -341,8 +383,8 @@ def ingest_video(req: IngestRequest, db: SupabaseClient = Depends(get_supabase))
 
     # Publish to QStash
     if settings.QSTASH_TOKEN:
-        q_client = QStashClient(token=settings.QSTASH_TOKEN)
-        q_client.publish_json(
+        q_client = QStash(settings.QSTASH_TOKEN)
+        q_client.message.publish_json(
             url=f"{settings.BACKEND_URL}/api/v1/internal/process-video",
             body={
                 "video_id": video["id"],

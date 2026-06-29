@@ -6,6 +6,6 @@
 - [x] Task 4: Backend Ingestion Stage 2 (Transcription Process & Fallbacks)
 - [x] Task 5: Backend Ingestion Stage 3 (Frame Extraction, Deduplication & Vision)
 - [x] Task 6: Backend RAG Chat & Retrieval API
-- [ ] Task 7: Frontend Page Layout & Control Drawer Component
-- [ ] Task 8: Frontend WebGL Matrix Canvas & Realtime Lighting
-- [ ] Task 9: Frontend Video Player & Interactive Citation Badges
+- [x] Task 7: Frontend Page Layout & Control Drawer Component
+- [x] Task 8: Frontend WebGL Matrix Canvas & Realtime Lighting
+- [x] Task 9: Frontend Video Player & Interactive Citation Badges
