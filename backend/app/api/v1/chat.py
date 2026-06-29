@@ -43,7 +43,10 @@ def generate_hyde_paragraph(query: str, settings: Settings) -> str:
     res = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=[
-            f"Write a short paragraph answering this question based on technical programming slides: {query}"
+            f"You are an expert technical instructor teaching a programming class. "
+            f'Write a detailed hypothetical slide transcript or documentation paragraph that directly answers this question: "{query}". '
+            f"Use precise technical terms, syntax, code snippets, or architectural bullet points that you would expect to see on an educational slide deck or lecture transcript. "
+            f"Do not add any intro, meta-commentary, or outro; write only the hypothetical content."
         ],
     )
     return res.text
@@ -124,18 +127,21 @@ def run_chat_rag(
         )
 
     # 4. Generate grounded response with citations
-    rag_prompt = f"""You are TubeRAG, an elite technical assistant. Answer the user's query using only the provided video contexts.
-For each statement, you MUST cite your source by appending a markdown citation link.
+    rag_prompt = f"""You are TubeRAG, an elite technical co-pilot. Provide a comprehensive, highly accurate, and structured answer to the User Query based ONLY on the provided Context Chunks.
 
 Context Chunks:
 {formatted_context}
 
 User Query: {req.message}
 
-Formatting Rules:
-- If citing transcript: use `[Transcript @ MM:SS](cite:transcript:seconds)` (replace seconds with integer value)
-- If citing a visual frame: use `[Slide @ MM:SS](cite:slide:seconds)` (replace seconds with integer value)
-- Do not make statements not directly supported by the context chunks.
+Instructions:
+1. **Structuring:** Organize your answer logically using Markdown headings, bullet points, numbered lists, or code blocks where appropriate to make the response highly readable.
+2. **Grounding:** Rely *only* on facts directly stated in the Context Chunks. Do not extrapolate, assume, or speculate. If the context does not contain enough information to answer the question, state that clearly and politely.
+3. **Citations:** Every single fact or technical claim you make must be accompanied by an inline citation immediately following the statement.
+   - Convert the chunk's start time (in seconds) to `MM:SS` format (e.g., 75 seconds is `01:15`, 125 seconds is `02:05`).
+   - For `transcript` chunks, format as: `[Transcript @ MM:SS](cite:transcript:seconds)` where `seconds` is the exact integer value of start_time (e.g., `[Transcript @ 02:05](cite:transcript:125)`).
+   - For `frame` or `slide` chunks, format as: `[Slide @ MM:SS](cite:slide:seconds)` where `seconds` is the exact integer value of start_time (e.g., `[Slide @ 01:15](cite:slide:75)`).
+   - If multiple chunks support a statement, place them consecutively: e.g. `... [Transcript @ 01:15](cite:transcript:75) [Slide @ 02:05](cite:slide:125)`.
 """
 
     response_text = generate_rag_response(rag_prompt, settings)
