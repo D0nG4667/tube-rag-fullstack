@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement client-side AES key encryption, StudyStudio 3-column workspace architecture (Sources left, Chat & Video center, Studio right with outline and podcast audio overview), historical video management (search & delete), and mobile responsiveness.
+**Goal:** Implement client-side AES key encryption, StudyStudio 3-column workspace architecture (Sources left, Chat & Video center, Studio right with outline, podcast audio overview, and interactive SVG mindmap), historical video management (search & delete), and mobile responsiveness.
 
 ---
 
@@ -15,7 +15,7 @@
 │  SOURCES        │  CHAT & VIEWPORT                 │  STUDIO         │
 │  - Video List   │  - Video Player                  │  - Outlines     │
 │  - Search Filter│  - RAG Chat Console              │  - Podcast Play │
-│  - Status Rings │  - Custom Key Settings           │                 │
+│  - Status Rings │  - Custom Key Settings           │  - SVG Mindmap  │
 │                 │                                  │                 │
 └─────────────────┴──────────────────────────────────┴─────────────────┘
 ```
@@ -185,7 +185,7 @@
 
 ---
 
-### Task 3: StudyStudio outline & Audio Podcast Overview
+### Task 3: StudyStudio outline, Audio Podcast, & Mindmap
 
 **Files:**
 - Create: `backend/app/api/v1/notebook.py`
@@ -193,10 +193,11 @@
 - Modify: `frontend/src/components/ChatPanel.tsx`
 - Modify: `frontend/src/app/page.tsx`
 
-- [ ] **Step 1: Write outline & podcast generation endpoints**
+- [ ] **Step 1: Write outline, podcast & mindmap generation endpoints**
   Create [notebook.py](../../../backend/app/api/v1/notebook.py) containing:
   * `POST /api/v1/notebook/outline`: Retrieves video chunks and generates a structured educational outline.
   * `POST /api/v1/notebook/podcast`: Retrieves video chunks and generates a conversational multi-host script (e.g. `[{"host": "Host A", "text": "..."}, ...]`).
+  * `POST /api/v1/notebook/mindmap`: Clusters transcript topics into a JSON hierarchy: `{ subject: str, branches: [{ title: str, leaves: [{ text: str, seconds: number }] }] }`.
 
 - [ ] **Step 2: Register notebook router in app main**
   Modify [main.py](../../../backend/app/main.py) to register the new `/api/v1/notebook` router.
@@ -205,8 +206,9 @@
   * Modify [page.tsx](../../../frontend/src/app/page.tsx) to turn the workspace layout into a 3-column setup:
     1. **Column 1 (Left ControlDrawer):** Sources list.
     2. **Column 2 (Center Viewport & Chat):** Video player and RAG Chat Console.
-    3. **Column 3 (Right Studio Drawer):** Collapsible panel displaying the Studio outline summaries and Podcast player.
+    3. **Column 3 (Right Studio Drawer):** Collapsible panel displaying the Studio outline summaries, Podcast player, and Mindmap.
   * For **Podcast Mode**, render cards of Host dialogs. Use `window.speechSynthesis` to speak text with alternating male/female voices, highlighting the active host card in real-time.
+  * For **Mindmap Mode**, render an interactive SVG-connected node chart. Create floating glassmorphic node divs linked by SVG bezier path connections. Clicking leaf nodes seeks the video player dynamically to the concept timestamp.
 
 ---
 

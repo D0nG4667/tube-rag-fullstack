@@ -1,6 +1,6 @@
 # Design Spec: Bring Your Own Key & Workspace UX Improvements
 
-This specification details Phase 2.0 UX and API capabilities for **TubeRAG**, supporting custom Gemini API keys, historical node deletion, search filters, and full mobile responsiveness.
+This specification details Phase 2.0 UX and API capabilities for **TubeRAG**, supporting custom Gemini API keys, historical node deletion, search filters, full mobile responsiveness, and an interactive StudyStudio featuring mindmaps.
 
 ---
 
@@ -30,11 +30,24 @@ This specification details Phase 2.0 UX and API capabilities for **TubeRAG**, su
   * Render a trash/delete icon button next to each video in the list.
   * Trigger a confirm dialog and fetch `DELETE /api/v1/videos/{id}`. On success, remove the video node from the sidebar and fetch the active list.
 
-### 3. Historical Video Node Search & Statuses
+### 3. StudyStudio (Sources, Chat, Studio Panels) & Interactive Mindmap
+* **StudyStudio 3-Column Layout:**
+  * **Column 1:** Sources (ControlDrawer list).
+  * **Column 2:** Chat RAG Console & Video Viewport.
+  * **Column 3:** Studio Drawer presenting dynamic learning guides (Outlines, Podcasts, and Mindmaps).
+* **Interactive Mindmap Feature:**
+  * Build a custom mindmap node graph inside the Studio view.
+  * The backend returns a hierarchical JSON mindmap cluster of key concepts.
+  * The frontend renders floating glassmorphic cards connected by SVG bezier curves (path connectors).
+  * Clicking a concept leaf node seeks the client-side video player directly to its source timestamp.
+* **Podcast Audio Overview:**
+  * Uses `window.speechSynthesis` to speak podcast scripts with alternating male/female voices, highlighting active host cards in real-time.
+
+### 4. Historical Video Node Search & Statuses
 * **Sidebar Filter:** Add a search input at the top of the sidebar. Filter the list of videos in real-time as the user types.
 * **Status Badges:** Display corresponding visual indicators for ingestion state (Ready: green, Processing: yellow/pulse, Failed: red) in the list nodes.
 
-### 4. Mobile Responsiveness & Hamburger Drawer
+### 5. Mobile Responsiveness & Hamburger Drawer
 * **Mobile Stack Layout:** Responsive Tailwind grids stack panels vertically on mobile screens:
   * Left and Right widths adapt to `w-full` instead of draggable split percentage when viewport is small.
   * Toggle/Disable resizer handle bar drag listener on mobile touch screens.
@@ -49,6 +62,7 @@ This specification details Phase 2.0 UX and API capabilities for **TubeRAG**, su
 
 ### Manual Verification
 - **AES Key Test:** Configure a key and passphrase; reload page. Verify key is decrypted only when entering correct password. Verify RAG fails with wrong password.
+- **Mindmap Graph Test:** Open the Mindmap view; verify floating node cards render and are linked by SVG curves. Verify clicking a node seeks the video player to the correct timestamp.
 - **Search Test:** Type video titles in the filter search box; verify the sidebar list narrows down correctly.
 - **Delete Test:** Delete a video; verify it disappears from the list and all chunks are removed from the DB.
 - **Responsive Test:** View the app on a mobile emulation window; verify panels stack vertically and the hamburger drawer slides open cleanly.
