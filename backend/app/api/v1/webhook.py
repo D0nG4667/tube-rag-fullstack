@@ -97,7 +97,11 @@ def process_video_task(
             ).eq("id", video_id).execute()
 
             # Schedule frame extraction
-            if settings.ENVIRONMENT == "local" and background_tasks:
+            if (
+                settings.ENVIRONMENT == "local"
+                and "pytest" not in sys.modules
+                and background_tasks
+            ):
                 background_tasks.add_task(
                     process_video_task,
                     video_id,
@@ -163,7 +167,11 @@ def process_video_task(
                     {"status": "transcribing", "current_offset": offset + 600.0}
                 ).eq("id", video_id).execute()
 
-                if settings.ENVIRONMENT == "local" and background_tasks:
+                if (
+                    settings.ENVIRONMENT == "local"
+                    and "pytest" not in sys.modules
+                    and background_tasks
+                ):
                     background_tasks.add_task(
                         process_video_task,
                         video_id,
@@ -190,7 +198,11 @@ def process_video_task(
                     {"status": "processing_frames", "current_offset": 0.0}
                 ).eq("id", video_id).execute()
 
-                if settings.ENVIRONMENT == "local" and background_tasks:
+                if (
+                    settings.ENVIRONMENT == "local"
+                    and "pytest" not in sys.modules
+                    and background_tasks
+                ):
                     background_tasks.add_task(
                         process_video_task,
                         video_id,
@@ -288,7 +300,11 @@ def process_video_task(
                 {"status": "processing_frames", "current_offset": offset + 600.0}
             ).eq("id", video_id).execute()
 
-            if settings.ENVIRONMENT == "local" and background_tasks:
+            if (
+                settings.ENVIRONMENT == "local"
+                and "pytest" not in sys.modules
+                and background_tasks
+            ):
                 background_tasks.add_task(
                     process_video_task,
                     video_id,

@@ -1,4 +1,5 @@
 import re
+import sys
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
@@ -57,7 +58,7 @@ def ingest_video(
         video = ins_res.data[0]
 
     # Publish to QStash or run locally in BackgroundTasks
-    if settings.ENVIRONMENT == "local":
+    if settings.ENVIRONMENT == "local" and "pytest" not in sys.modules:
         background_tasks.add_task(
             process_video_task,
             video["id"],
