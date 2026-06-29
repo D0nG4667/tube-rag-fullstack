@@ -1,0 +1,22 @@
+{
+  "name": "frontend",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "prepare": "cd .. && husky install frontend/.husky"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0"
+  }
+}

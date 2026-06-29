@@ -1,14 +1,25 @@
-import os
-from pydantic_settings import BaseSettings
+from functools import lru_cache
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
-    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
-    QSTASH_TOKEN: str = os.getenv("QSTASH_TOKEN", "")
-    QSTASH_CURRENT_SIGNING_KEY: str = os.getenv("QSTASH_CURRENT_SIGNING_KEY", "")
-    QSTASH_NEXT_SIGNING_KEY: str = os.getenv("QSTASH_NEXT_SIGNING_KEY", "")
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    BACKEND_URL: str = os.getenv("BACKEND_URL", "http://localhost:8000")
+    model_config = SettingsConfigDict(
+        # Support loading from .env in backend/ or root folder
+        env_file=(".env", "../.env"),
+        env_ignore_empty=True,
+        extra="ignore",
+    )
 
-settings = Settings()
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
+    DATABASE_URL: str = ""
+    QSTASH_TOKEN: str = ""
+    QSTASH_CURRENT_SIGNING_KEY: str = ""
+    QSTASH_NEXT_SIGNING_KEY: str = ""
+    GEMINI_API_KEY: str = ""
+    BACKEND_URL: str = "http://localhost:8000"
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+settings = get_settings()

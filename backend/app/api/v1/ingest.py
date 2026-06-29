@@ -1,16 +1,18 @@
 import re
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from qstash import Client as QStashClient
+from qstash import QStash
 from supabase import create_client, Client as SupabaseClient
-from app.core.config import settings
+from app.core.config import Settings, get_settings
 
 router = APIRouter()
 
 class IngestRequest(BaseModel):
     url: str
 
-def get_supabase() -> SupabaseClient:
+def get_supabase(settings: Settings = Depends(get_settings)) -> SupabaseClient | None:
+    if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
+        return None
     return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
 def extract_youtube_id(url: str) -> str:
@@ -21,12 +23,19 @@ def extract_youtube_id(url: str) -> str:
     raise ValueError("Invalid YouTube URL")
 
 @router.post("/api/v1/ingest", status_code=202)
-def ingest_video(req: IngestRequest, db: SupabaseClient = Depends(get_supabase)):
+def ingest_video(
+    req: IngestRequest,
+    db: SupabaseClient | None = Depends(get_supabase),
+    settings: Settings = Depends(get_settings)
+):
     try:
         yt_id = extract_youtube_id(req.url)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database client is not configured")
+
     # Store video record
     res = db.table("videos").select("*").eq("youtube_id", yt_id).execute()
     if res.data:
@@ -44,8 +53,8 @@ def ingest_video(req: IngestRequest, db: SupabaseClient = Depends(get_supabase))
 
     # Publish to QStash
     if settings.QSTASH_TOKEN:
-        q_client = QStashClient(token=settings.QSTASH_TOKEN)
-        q_client.publish_json(
+        q_client = QStash(token=settings.QSTASH_TOKEN)
+        q_client.message.publish_json(
             url=f"{settings.BACKEND_URL}/api/v1/internal/process-video",
             body={
                 "video_id": video["id"],
