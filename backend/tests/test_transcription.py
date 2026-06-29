@@ -40,25 +40,27 @@ def test_process_video_webhook_native_success():
     app.dependency_overrides[get_supabase] = lambda: mock_db
     app.dependency_overrides[verify_qstash_signature] = lambda: None
 
-    # Patch native transcript fetch on instance
+    # Patch native transcript fetch on instance and QStash client
     with patch("youtube_transcript_api.YouTubeTranscriptApi.fetch") as mock_fetch:
-        mock_fetch.return_value = [
-            {"text": "Never gonna give you up", "start": 0.0, "duration": 2.0}
-        ]
-        
-        response = client.post("/api/v1/internal/process-video", json={
-            "video_id": "test_video_uuid",
-            "step": "transcribe",
-            "offset": 0.0
-        })
+        with patch("qstash.QStash") as mock_qstash:
+            mock_fetch.return_value = [
+                {"text": "Never gonna give you up", "start": 0.0, "duration": 2.0}
+            ]
+            
+            response = client.post("/api/v1/internal/process-video", json={
+                "video_id": "test_video_uuid",
+                "step": "transcribe",
+                "offset": 0.0
+            })
 
-        assert response.status_code == 200
-        assert response.json() == {"status": "ok"}
-        
-        # Verify db insert was called for chunks
-        mock_db.table.assert_any_call("video_chunks")
-        # Verify status update was called to progress to frame extraction
-        mock_db.table.assert_any_call("videos")
+            assert response.status_code == 200
+            assert response.json() == {"status": "ok"}
+            mock_qstash.assert_called_once()
+            
+            # Verify db insert was called for chunks
+            mock_db.table.assert_any_call("video_chunks")
+            # Verify status update was called to progress to frame extraction
+            mock_db.table.assert_any_call("videos")
         
     app.dependency_overrides.clear()
 

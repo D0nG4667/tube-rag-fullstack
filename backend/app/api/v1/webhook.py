@@ -1,6 +1,8 @@
 import os
 import sys
 import tempfile
+import cv2
+import numpy as np
 from fastapi import APIRouter, Header, HTTPException, Request, Depends
 from supabase import Client as SupabaseClient
 from qstash import Receiver
@@ -12,6 +14,12 @@ from app.services.transcription import (
     download_audio_segment, 
     transcribe_audio_with_gemini,
     get_embedding
+)
+from app.services.frame_extractor import (
+    calculate_ssim,
+    analyze_frame_with_gemini,
+    download_video_segment,
+    extract_frames_from_video
 )
 from youtube_transcript_api import YouTubeTranscriptApi
 
@@ -62,7 +70,7 @@ async def process_video_webhook(
 
     if step == "transcribe":
         try:
-            # Check native transcript first (using instance-based fetch for youtube-transcript-api v1.x)
+            # Check native transcript first
             raw_items = list(YouTubeTranscriptApi().fetch(video["youtube_id"]))
             chunks = time_aware_chunker(raw_items)
             
@@ -79,11 +87,23 @@ async def process_video_webhook(
                     "metadata": {}
                 }).execute()
             
-            # Progress status to frame extraction
+            # Progress status to frame extraction and publish first segment
             db.table("videos").update({
                 "status": "processing_frames", 
                 "current_offset": 0.0
             }).eq("id", video_id).execute()
+
+            if settings.QSTASH_TOKEN:
+                from qstash import QStash
+                q_client = QStash(token=settings.QSTASH_TOKEN)
+                q_client.message.publish_json(
+                    url=f"{settings.BACKEND_URL}/api/v1/internal/process-video",
+                    body={
+                        "video_id": video_id,
+                        "step": "extract_frames",
+                        "offset": 0.0
+                    }
+                )
             
         except Exception as e:
             # Fallback to audio segment extraction + Gemini transcription
@@ -139,5 +159,104 @@ async def process_video_webhook(
                     "status": "processing_frames",
                     "current_offset": 0.0
                 }).eq("id", video_id).execute()
+
+                if settings.QSTASH_TOKEN:
+                    from qstash import QStash
+                    q_client = QStash(token=settings.QSTASH_TOKEN)
+                    q_client.message.publish_json(
+                        url=f"{settings.BACKEND_URL}/api/v1/internal/process-video",
+                        body={
+                            "video_id": video_id,
+                            "step": "extract_frames",
+                            "offset": 0.0
+                        }
+                    )
+
+    elif step == "extract_frames":
+        tmp_video = os.path.join(tempfile.gettempdir(), f"video_{video_id}_{offset}.mp4")
+        try:
+            download_video_segment(yt_url, offset, offset + 600.0, tmp_video)
+            frames = extract_frames_from_video(tmp_video, interval_sec=10.0)
+            
+            prev_img = None
+            for timestamp, frame_bytes in frames:
+                # Decode frame bytes to CV image for SSIM calculation
+                nparr = np.frombuffer(frame_bytes, np.uint8)
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                if img is None:
+                    continue
+
+                if prev_img is not None:
+                    sim = calculate_ssim(img, prev_img)
+                    if sim >= 0.90:
+                        # Skip duplicate frame
+                        continue
+
+                # Run vision model and store
+                slide_analysis = analyze_frame_with_gemini(frame_bytes)
+                
+                # Default storage path and URL
+                storage_path = f"frames/{video_id}/{offset + timestamp}.webp"
+                storage_url = f"https://mock.storage/{storage_path}"
+                
+                # Upload to Supabase Storage if configured and not in test mode
+                if not ("pytest" in sys.modules or not settings.SUPABASE_URL):
+                    try:
+                        db.storage.from_("video-frames").upload(
+                            path=storage_path,
+                            file=frame_bytes,
+                            file_options={"content-type": "image/webp"}
+                        )
+                        storage_url = db.storage.from_("video-frames").get_public_url(storage_path)
+                    except Exception as e:
+                        print(f"Failed to upload to storage: {e}")
+
+                db.table("video_chunks").insert({
+                    "video_id": video_id,
+                    "content": f"Slide: {slide_analysis.slide_title or ''}\nOCR Text: {slide_analysis.ocr_text}\nVisual Description: {slide_analysis.visual_description}",
+                    "embedding": get_embedding(slide_analysis.ocr_text),
+                    "start_time": offset + timestamp,
+                    "end_time": offset + timestamp + 10.0,
+                    "chunk_type": "visual_frame",
+                    "image_url": storage_url,
+                    "metadata": {
+                        "slide_title": slide_analysis.slide_title,
+                        "code_snippets": slide_analysis.code_snippets
+                    }
+                }).execute()
+
+                prev_img = img
+
+        finally:
+            if os.path.exists(tmp_video):
+                try:
+                    os.remove(tmp_video)
+                except Exception:
+                    pass
+
+        # Schedule next video segment or mark completed
+        duration = video.get("duration") or 3600.0
+        if offset + 600.0 < duration:
+            db.table("videos").update({
+                "status": "processing_frames",
+                "current_offset": offset + 600.0
+            }).eq("id", video_id).execute()
+
+            if settings.QSTASH_TOKEN:
+                from qstash import QStash
+                q_client = QStash(token=settings.QSTASH_TOKEN)
+                q_client.message.publish_json(
+                    url=f"{settings.BACKEND_URL}/api/v1/internal/process-video",
+                    body={
+                        "video_id": video_id,
+                        "step": "extract_frames",
+                        "offset": offset + 600.0
+                    }
+                )
+        else:
+            db.table("videos").update({
+                "status": "completed",
+                "current_offset": duration
+            }).eq("id", video_id).execute()
 
     return {"status": "ok"}
