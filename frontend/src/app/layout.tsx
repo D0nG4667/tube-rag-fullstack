@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TubeRAG - Emergent Slide-Aware Video Search Engine",
+  title: "TubeRAG - Video Chat Engine",
   description: "Elite RAG system utilizing hybrid retrieval and frame analysis for slide-deck video understanding.",
 };
 

@@ -111,7 +111,7 @@ export default function Dashboard() {
   return (
     <main className="relative min-h-screen w-screen flex text-zinc-100 overflow-hidden">
       {/* 3D background canvas layer */}
-      <MatrixCanvas active={hasActiveJob} />
+      <MatrixCanvas active={hasActiveJob} selectedVideoId={selectedVideo?.id || ''} />
 
       {/* Collapsible Left drawer control */}
       <ControlDrawer

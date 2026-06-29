@@ -1,11 +1,38 @@
 'use client'
 
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
+import { gsap } from 'gsap'
 import type * as THREE from 'three'
 
-function ParticleField() {
+interface ParticleFieldProps {
+  selectedVideoId?: string
+}
+
+function ParticleField({ selectedVideoId }: ParticleFieldProps) {
   const pointsRef = useRef<THREE.Points>(null)
+  const mouseRef = useRef({ x: 0, y: 0 })
+  const zoomOffsetRef = useRef({ z: 0 })
+
+  // Track window mouse movements normalized to [-1, 1] range
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current.x = (e.clientX / window.innerWidth) * 2 - 1
+      mouseRef.current.y = -(e.clientY / window.innerHeight) * 2 + 1
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [])
+
+  // Trigger GSAP zoom animation when a video is selected
+  useEffect(() => {
+    if (!selectedVideoId) return
+    gsap.fromTo(
+      zoomOffsetRef.current,
+      { z: -2.5 },
+      { z: 0, duration: 1.5, ease: 'power2.out' }
+    )
+  }, [selectedVideoId])
 
   // Generate random positions and colors for 250 semantic data node particles
   const [positions, colors] = useMemo(() => {
@@ -31,21 +58,29 @@ function ParticleField() {
     const time = state.clock.getElapsedTime()
     
     // Slow rotational drift
-    pointsRef.current.rotation.y = time * 0.02
-    pointsRef.current.rotation.x = time * 0.01
+    pointsRef.current.rotation.y = time * 0.01
 
-    // Wave movement
+    // Wave movement on particles
     const posAttribute = pointsRef.current.geometry.attributes.position
     if (posAttribute) {
       for (let i = 0; i < 250; i++) {
         const x = posAttribute.getX(i)
         const y = posAttribute.getY(i)
-        // Offset Y with a sine wave based on time and coordinate
         const wave = Math.sin(time * 0.5 + x) * 0.002
         posAttribute.setY(i, y + wave)
       }
       posAttribute.needsUpdate = true
     }
+
+    // Dynamic mouse parallax camera orbit lerp
+    const targetX = mouseRef.current.x * 1.5
+    const targetY = mouseRef.current.y * 1.2
+    const targetZ = 5 + zoomOffsetRef.current.z
+
+    state.camera.position.x += (targetX - state.camera.position.x) * 0.05
+    state.camera.position.y += (targetY - state.camera.position.y) * 0.05
+    state.camera.position.z += (targetZ - state.camera.position.z) * 0.05
+    state.camera.lookAt(0, 0, 0)
   })
 
   return (
@@ -72,7 +107,12 @@ function ParticleField() {
   )
 }
 
-export default function MatrixCanvas({ active = false }: { active?: boolean }) {
+interface MatrixCanvasProps {
+  active?: boolean
+  selectedVideoId?: string
+}
+
+export default function MatrixCanvas({ active = false, selectedVideoId }: MatrixCanvasProps) {
   return (
     <div className="fixed inset-0 -z-10 bg-zinc-950">
       <Canvas camera={{ position: [0, 0, 5], fov: 60 }} gl={{ antialias: true }}>
@@ -83,7 +123,7 @@ export default function MatrixCanvas({ active = false }: { active?: boolean }) {
           intensity={active ? 3.5 : 1.5}
           color={active ? '#06b6d4' : '#7c3aed'}
         />
-        <ParticleField />
+        <ParticleField selectedVideoId={selectedVideoId} />
       </Canvas>
     </div>
   )
