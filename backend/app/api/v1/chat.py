@@ -115,7 +115,10 @@ def run_chat_rag(
     ).execute()
 
     if not res.data:
-        raise HTTPException(status_code=404, detail="No matching video segments found")
+        return {
+            "response": "I couldn't find any indexed transcripts or slide frames matching your query in this video. Please make sure the video has finished indexing successfully, or try asking something else!",
+            "sources": [],
+        }
 
     # Format retrieved contexts
     formatted_context = ""

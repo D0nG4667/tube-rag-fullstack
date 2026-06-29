@@ -73,7 +73,10 @@ def test_chat_endpoint_no_results():
         json={"video_id": "test_video_uuid", "message": "tell me about this video"},
     )
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "No matching video segments found"
+    assert response.status_code == 200
+    res_data = response.json()
+    assert "response" in res_data
+    assert "I couldn't find any indexed transcripts" in res_data["response"]
+    assert res_data["sources"] == []
 
     app.dependency_overrides.clear()
