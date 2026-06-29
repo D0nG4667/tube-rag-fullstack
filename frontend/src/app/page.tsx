@@ -29,15 +29,27 @@ export default function Dashboard() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      if (data) {
+      if (data && data.length > 0) {
         setVideos(data)
         // Auto-select first video if none selected
         setSelectedVideo((current) => {
-          if (data.length > 0 && !current) {
+          if (!current) {
             return data[0]
           }
           return current
         })
+      } else {
+        // Use default demo mock list if database is empty
+        const mockList = [
+          {
+            id: 'mock-id-1',
+            youtube_id: 'dQw4w9WgXcQ',
+            title: 'Rick Astley - Never Gonna Give You Up (Official Music Video)',
+            status: 'completed',
+          },
+        ]
+        setVideos(mockList)
+        setSelectedVideo((current) => current || mockList[0])
       }
     } catch (err) {
       console.error('Error fetching videos:', err)
