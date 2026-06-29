@@ -1,7 +1,7 @@
 import re
 import sys
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
 from qstash import QStash
 from supabase import Client as SupabaseClient
@@ -31,6 +31,7 @@ def extract_youtube_id(url: str) -> str:
 def ingest_video(
     req: IngestRequest,
     background_tasks: BackgroundTasks,
+    request: Request,
     db: SupabaseClient | None = Depends(get_supabase),
     settings: Settings = Depends(get_settings),
 ):
@@ -57,6 +58,16 @@ def ingest_video(
         ins_res = db.table("videos").insert(video_data).execute()
         video = ins_res.data[0]
 
+    # Construct base URL dynamically if BACKEND_URL is localhost/loopback or empty
+    backend_url = settings.BACKEND_URL
+    if not backend_url or "localhost" in backend_url or "127.0.0.1" in backend_url or "::1" in backend_url:
+        forwarded_proto = request.headers.get("x-forwarded-proto", "http")
+        forwarded_host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.base_url.netloc
+        if forwarded_host:
+            backend_url = f"{forwarded_proto}://{forwarded_host}"
+        else:
+            backend_url = str(request.base_url).rstrip("/")
+
     # Publish to QStash or run locally in BackgroundTasks
     if settings.ENVIRONMENT == "local" and "pytest" not in sys.modules:
         background_tasks.add_task(
@@ -67,11 +78,12 @@ def ingest_video(
             db,
             settings,
             background_tasks,
+            backend_url,
         )
     elif settings.QSTASH_TOKEN:
         q_client = QStash(token=settings.QSTASH_TOKEN)
         q_client.message.publish_json(
-            url=f"{settings.BACKEND_URL}/api/v1/internal/process-video",
+            url=f"{backend_url}/api/v1/internal/process-video",
             body={"video_id": video["id"], "step": "transcribe", "offset": 0.0},
         )
     return {"video_id": video["id"], "status": video["status"]}

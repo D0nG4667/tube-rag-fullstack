@@ -58,6 +58,7 @@ def process_video_task(
     db: SupabaseClient,
     settings: Settings,
     background_tasks: BackgroundTasks | None = None,
+    backend_url: str | None = None,
 ) -> dict:
     """
     Executes the video ingestion and processing task step-by-step.
@@ -110,13 +111,14 @@ def process_video_task(
                     db,
                     settings,
                     background_tasks,
+                    backend_url,
                 )
             elif settings.QSTASH_TOKEN:
                 from qstash import QStash
 
                 q_client = QStash(token=settings.QSTASH_TOKEN)
                 q_client.message.publish_json(
-                    url=f"{settings.BACKEND_URL}/api/v1/internal/process-video",
+                    url=f"{backend_url or settings.BACKEND_URL}/api/v1/internal/process-video",
                     body={
                         "video_id": video_id,
                         "step": "extract_frames",
@@ -180,13 +182,14 @@ def process_video_task(
                         db,
                         settings,
                         background_tasks,
+                        backend_url,
                     )
                 elif settings.QSTASH_TOKEN:
                     from qstash import QStash
 
                     q_client = QStash(token=settings.QSTASH_TOKEN)
                     q_client.message.publish_json(
-                        url=f"{settings.BACKEND_URL}/api/v1/internal/process-video",
+                        url=f"{backend_url or settings.BACKEND_URL}/api/v1/internal/process-video",
                         body={
                             "video_id": video_id,
                             "step": "transcribe",
@@ -211,13 +214,14 @@ def process_video_task(
                         db,
                         settings,
                         background_tasks,
+                        backend_url,
                     )
                 elif settings.QSTASH_TOKEN:
                     from qstash import QStash
 
                     q_client = QStash(token=settings.QSTASH_TOKEN)
                     q_client.message.publish_json(
-                        url=f"{settings.BACKEND_URL}/api/v1/internal/process-video",
+                        url=f"{backend_url or settings.BACKEND_URL}/api/v1/internal/process-video",
                         body={
                             "video_id": video_id,
                             "step": "extract_frames",
@@ -313,13 +317,14 @@ def process_video_task(
                     db,
                     settings,
                     background_tasks,
+                    backend_url,
                 )
             elif settings.QSTASH_TOKEN:
                 from qstash import QStash
 
                 q_client = QStash(token=settings.QSTASH_TOKEN)
                 q_client.message.publish_json(
-                    url=f"{settings.BACKEND_URL}/api/v1/internal/process-video",
+                    url=f"{backend_url or settings.BACKEND_URL}/api/v1/internal/process-video",
                     body={
                         "video_id": video_id,
                         "step": "extract_frames",
@@ -347,6 +352,16 @@ async def process_video_webhook(
     step = req_data.get("step")
     offset = req_data.get("offset", 0.0)
 
+    # Ingest / webhook requests can infer backend_url
+    backend_url = settings.BACKEND_URL
+    if not backend_url or "localhost" in backend_url or "127.0.0.1" in backend_url or "::1" in backend_url:
+        forwarded_proto = request.headers.get("x-forwarded-proto", "http")
+        forwarded_host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.base_url.netloc
+        if forwarded_host:
+            backend_url = f"{forwarded_proto}://{forwarded_host}"
+        else:
+            backend_url = str(request.base_url).rstrip("/")
+
     if db is None:
         raise HTTPException(status_code=500, detail="Database client is not configured")
 
@@ -358,6 +373,7 @@ async def process_video_webhook(
             db=db,
             settings=settings,
             background_tasks=background_tasks,
+            backend_url=backend_url,
         )
         return res
     except ValueError as e:
