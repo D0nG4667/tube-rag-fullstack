@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.api.v1.ingest import router as ingest_router
 from app.api.v1.webhook import router as webhook_router
+from app.api.v1.chat import router as chat_router
 
 
 @asynccontextmanager
@@ -16,3 +17,4 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="TubeRAG Backend", lifespan=lifespan)
 app.include_router(ingest_router)
 app.include_router(webhook_router)
+app.include_router(chat_router)
