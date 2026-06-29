@@ -1,4 +1,5 @@
 import sys
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 from google import genai
@@ -15,6 +16,14 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     video_id: str
     message: str
+
+
+def is_valid_uuid(val: str) -> bool:
+    try:
+        uuid.UUID(val)
+        return True
+    except ValueError:
+        return False
 
 
 def generate_hyde_paragraph(query: str, settings: Settings) -> str:
@@ -64,6 +73,24 @@ def run_chat_rag(
 ):
     if db is None:
         raise HTTPException(status_code=500, detail="Database client is not configured")
+
+    # If the video ID is not a valid UUID (e.g. mock-id-1), return a clean mock response structure
+    if not is_valid_uuid(req.video_id):
+        return {
+            "response": "Welcome to TubeRAG! This is a mock response grounded on the demo video. Try indexing a real YouTube video to run live RAG queries! Citing: [Transcript @ 00:02](cite:transcript:2).",
+            "sources": [
+                {
+                    "chunk_id": "00000000-0000-0000-0000-000000000000",
+                    "content": "Hello and welcome to the TubeRAG demo video. Here we showcase semantic search across video timelines.",
+                    "start_time": 2.0,
+                    "end_time": 12.0,
+                    "chunk_type": "transcript",
+                    "image_url": None,
+                    "metadata": {},
+                    "combined_score": 1.0,
+                }
+            ],
+        }
 
     # 1. Generate HyDE hypothetical paragraph
     hyde_text = generate_hyde_paragraph(req.message, settings)
