@@ -1,5 +1,6 @@
 import os
 import sys
+
 import psycopg2
 
 
@@ -19,7 +20,7 @@ def run():
                 "01_init_schema.sql",
             )
             print(f"Reading migration from {migration_path}...")
-            with open(migration_path, "r", encoding="utf-8") as f:
+            with open(migration_path, encoding="utf-8") as f:
                 sql = f.read()
                 print("Executing SQL migration script...")
                 cur.execute(sql)

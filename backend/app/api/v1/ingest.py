@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from qstash import QStash
 from supabase import Client as SupabaseClient
-from supabase import create_client
 
 from app.core.config import Settings, get_settings
+from app.core.database import get_supabase_client
 
 router = APIRouter()
 
@@ -16,9 +16,10 @@ class IngestRequest(BaseModel):
 
 
 def get_supabase(settings: Settings = Depends(get_settings)) -> SupabaseClient | None:
-    if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
+    try:
+        return get_supabase_client()
+    except Exception:
         return None
-    return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
 
 def extract_youtube_id(url: str) -> str:
@@ -40,7 +41,7 @@ def ingest_video(
     try:
         yt_id = extract_youtube_id(req.url)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     if db is None:
         raise HTTPException(status_code=500, detail="Database client is not configured")

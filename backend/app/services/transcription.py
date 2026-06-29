@@ -21,7 +21,7 @@ def time_aware_chunker(
         text = item["text"]
         start = item["start"]
         duration = item.get("duration", 0.0)
-        end = start + duration
+        start + duration
 
         if not current_chunk:
             current_chunk.append(item)
