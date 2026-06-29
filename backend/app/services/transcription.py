@@ -3,8 +3,31 @@ import subprocess
 import sys
 
 from google import genai
+from google.genai import types
 
 from app.core.config import settings
+
+
+def get_embedding(text: str) -> list[float]:
+    """
+    Generates embedding vector of 768 dimensions using Gemini gemini-embedding-001.
+    """
+    if (
+        "pytest" in sys.modules
+        or not settings.GEMINI_API_KEY
+        or settings.GEMINI_API_KEY == "your-gemini-api-key"
+    ):
+        # Generate stable dummy embedding for testing
+        random.seed(hash(text))
+        return [random.uniform(-1.0, 1.0) for _ in range(768)]
+
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    emb_res = client.models.embed_content(
+        model="gemini-embedding-001",
+        contents=text,
+        config=types.EmbedContentConfig(output_dimensionality=768),
+    )
+    return emb_res.embeddings[0].values
 
 
 def time_aware_chunker(
@@ -111,21 +134,3 @@ def transcribe_audio_with_gemini(audio_path: str) -> str:
         return response.text
     finally:
         client.files.delete(name=file_ref.name)
-
-
-def get_embedding(text: str) -> list[float]:
-    """
-    Generates embedding vector of 768 dimensions using Gemini text-embedding-004.
-    """
-    if (
-        "pytest" in sys.modules
-        or not settings.GEMINI_API_KEY
-        or settings.GEMINI_API_KEY == "your-gemini-api-key"
-    ):
-        # Generate stable dummy embedding for testing
-        random.seed(hash(text))
-        return [random.uniform(-1.0, 1.0) for _ in range(768)]
-
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    emb_res = client.models.embed_content(model="text-embedding-004", contents=text)
-    return emb_res.embeddings[0].values
