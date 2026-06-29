@@ -1663,6 +1663,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "fastapi", extra = ["standard"] },
+    { name = "fastapi-cli" },
     { name = "google-genai" },
     { name = "numpy" },
     { name = "opencv-python-headless" },
@@ -1687,6 +1688,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = ">=0.110.0" },
+    { name = "fastapi-cli", specifier = ">=0.0.20" },
     { name = "google-genai", specifier = ">=0.1.0" },
     { name = "numpy", specifier = ">=1.20.0" },
     { name = "opencv-python-headless", specifier = ">=4.8.0.0" },
