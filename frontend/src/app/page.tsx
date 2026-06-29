@@ -39,31 +39,43 @@ export default function Dashboard() {
           return current
         })
       } else {
-        // Use default demo mock list if database is empty
-        const mockList = [
+        // Use default catalog list if database is empty
+        const CATALOG_VIDEOS = [
           {
             id: "00000000-0000-0000-0000-000000000001",
             youtube_id: "dQw4w9WgXcQ",
             title: "Rick Astley - Never Gonna Give You Up (Official Music Video)",
             status: "completed",
           },
+          {
+            id: "00000000-0000-0000-0000-000000000002",
+            youtube_id: "-9bo8HlSxwQ",
+            title: "CS50's Introduction to Programming with Python - Lecture 0",
+            status: "completed",
+          },
         ]
-        setVideos(mockList)
-        setSelectedVideo((current) => current || mockList[0])
+        setVideos(CATALOG_VIDEOS)
+        setSelectedVideo((current) => current || CATALOG_VIDEOS[0])
       }
     } catch (err) {
       console.error("Error fetching videos:", err)
-      // Fallback fallback mock list if Supabase config is missing
-      const mockList = [
+      // Fallback to default catalog list if Supabase connection fails
+      const CATALOG_VIDEOS = [
         {
           id: "00000000-0000-0000-0000-000000000001",
           youtube_id: "dQw4w9WgXcQ",
           title: "Rick Astley - Never Gonna Give You Up (Official Music Video)",
           status: "completed",
         },
+        {
+          id: "00000000-0000-0000-0000-000000000002",
+          youtube_id: "-9bo8HlSxwQ",
+          title: "CS50's Introduction to Programming with Python - Lecture 0",
+          status: "completed",
+        },
       ]
-      setVideos(mockList)
-      setSelectedVideo((current) => current || mockList[0])
+      setVideos(CATALOG_VIDEOS)
+      setSelectedVideo((current) => current || CATALOG_VIDEOS[0])
     }
   }, [])
 

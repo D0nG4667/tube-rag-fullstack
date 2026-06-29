@@ -4,14 +4,14 @@ import tempfile
 
 import cv2
 import numpy as np
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
 from qstash import Receiver
 from qstash.errors import SignatureError
 from supabase import Client as SupabaseClient
 from youtube_transcript_api import YouTubeTranscriptApi
 
-from app.api.v1.ingest import get_supabase
 from app.core.config import Settings, get_settings
+from app.core.database import get_supabase
 from app.services.frame_extractor import (
     analyze_frame_with_gemini,
     calculate_ssim,
@@ -51,25 +51,22 @@ async def verify_qstash_signature(
         raise HTTPException(status_code=401, detail=f"Invalid signature: {e}") from e
 
 
-@router.post("/api/v1/internal/process-video")
-async def process_video_webhook(
-    req_data: dict,
-    request: Request,
-    db: SupabaseClient | None = Depends(get_supabase),
-    settings: Settings = Depends(get_settings),
-    sig_verify=Depends(verify_qstash_signature),
-):
-    video_id = req_data.get("video_id")
-    step = req_data.get("step")
-    offset = req_data.get("offset", 0.0)
-
-    if db is None:
-        raise HTTPException(status_code=500, detail="Database client is not configured")
-
+def process_video_task(
+    video_id: str,
+    step: str,
+    offset: float,
+    db: SupabaseClient,
+    settings: Settings,
+    background_tasks: BackgroundTasks | None = None,
+) -> dict:
+    """
+    Executes the video ingestion and processing task step-by-step.
+    Supports recursive scheduling via either QStash or local BackgroundTasks.
+    """
     # Fetch video record
     res = db.table("videos").select("*").eq("id", video_id).execute()
     if not res.data:
-        raise HTTPException(status_code=404, detail="Video not found")
+        raise ValueError("Video not found")
     video = res.data[0]
     yt_url = f"https://www.youtube.com/watch?v={video['youtube_id']}"
 
@@ -99,7 +96,18 @@ async def process_video_webhook(
                 {"status": "processing_frames", "current_offset": 0.0}
             ).eq("id", video_id).execute()
 
-            if settings.QSTASH_TOKEN:
+            # Schedule frame extraction
+            if settings.ENVIRONMENT == "local" and background_tasks:
+                background_tasks.add_task(
+                    process_video_task,
+                    video_id,
+                    "extract_frames",
+                    0.0,
+                    db,
+                    settings,
+                    background_tasks,
+                )
+            elif settings.QSTASH_TOKEN:
                 from qstash import QStash
 
                 q_client = QStash(token=settings.QSTASH_TOKEN)
@@ -150,8 +158,22 @@ async def process_video_webhook(
             # Schedule next transcription segment or advance stage
             duration = video.get("duration") or 3600.0
             if offset + 600.0 < duration:
-                # Schedule next segment in queue
-                if settings.QSTASH_TOKEN:
+                # Keep status as transcribing but record progress
+                db.table("videos").update(
+                    {"status": "transcribing", "current_offset": offset + 600.0}
+                ).eq("id", video_id).execute()
+
+                if settings.ENVIRONMENT == "local" and background_tasks:
+                    background_tasks.add_task(
+                        process_video_task,
+                        video_id,
+                        "transcribe",
+                        offset + 600.0,
+                        db,
+                        settings,
+                        background_tasks,
+                    )
+                elif settings.QSTASH_TOKEN:
                     from qstash import QStash
 
                     q_client = QStash(token=settings.QSTASH_TOKEN)
@@ -163,16 +185,22 @@ async def process_video_webhook(
                             "offset": offset + 600.0,
                         },
                     )
-                # Keep status as transcribing but record current offset progress
-                db.table("videos").update(
-                    {"status": "transcribing", "current_offset": offset + 600.0}
-                ).eq("id", video_id).execute()
             else:
                 db.table("videos").update(
                     {"status": "processing_frames", "current_offset": 0.0}
                 ).eq("id", video_id).execute()
 
-                if settings.QSTASH_TOKEN:
+                if settings.ENVIRONMENT == "local" and background_tasks:
+                    background_tasks.add_task(
+                        process_video_task,
+                        video_id,
+                        "extract_frames",
+                        0.0,
+                        db,
+                        settings,
+                        background_tasks,
+                    )
+                elif settings.QSTASH_TOKEN:
                     from qstash import QStash
 
                     q_client = QStash(token=settings.QSTASH_TOKEN)
@@ -260,7 +288,17 @@ async def process_video_webhook(
                 {"status": "processing_frames", "current_offset": offset + 600.0}
             ).eq("id", video_id).execute()
 
-            if settings.QSTASH_TOKEN:
+            if settings.ENVIRONMENT == "local" and background_tasks:
+                background_tasks.add_task(
+                    process_video_task,
+                    video_id,
+                    "extract_frames",
+                    offset + 600.0,
+                    db,
+                    settings,
+                    background_tasks,
+                )
+            elif settings.QSTASH_TOKEN:
                 from qstash import QStash
 
                 q_client = QStash(token=settings.QSTASH_TOKEN)
@@ -278,3 +316,33 @@ async def process_video_webhook(
             ).eq("id", video_id).execute()
 
     return {"status": "ok"}
+
+
+@router.post("/api/v1/internal/process-video")
+async def process_video_webhook(
+    req_data: dict,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: SupabaseClient | None = Depends(get_supabase),
+    settings: Settings = Depends(get_settings),
+    sig_verify=Depends(verify_qstash_signature),
+):
+    video_id = req_data.get("video_id")
+    step = req_data.get("step")
+    offset = req_data.get("offset", 0.0)
+
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database client is not configured")
+
+    try:
+        res = process_video_task(
+            video_id=video_id,
+            step=step,
+            offset=offset,
+            db=db,
+            settings=settings,
+            background_tasks=background_tasks,
+        )
+        return res
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e

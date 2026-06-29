@@ -11,6 +11,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    ENVIRONMENT: str = "local"
     SUPABASE_URL: str = ""
     SUPABASE_KEY: str = ""
     DATABASE_URL: str = ""

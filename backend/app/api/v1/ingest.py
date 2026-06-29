@@ -1,25 +1,19 @@
 import re
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 from qstash import QStash
 from supabase import Client as SupabaseClient
 
+from app.api.v1.webhook import process_video_task
 from app.core.config import Settings, get_settings
-from app.core.database import get_supabase_client
+from app.core.database import get_supabase
 
 router = APIRouter()
 
 
 class IngestRequest(BaseModel):
     url: str
-
-
-def get_supabase(settings: Settings = Depends(get_settings)) -> SupabaseClient | None:
-    try:
-        return get_supabase_client()
-    except Exception:
-        return None
 
 
 def extract_youtube_id(url: str) -> str:
@@ -35,6 +29,7 @@ def extract_youtube_id(url: str) -> str:
 @router.post("/api/v1/ingest", status_code=202)
 def ingest_video(
     req: IngestRequest,
+    background_tasks: BackgroundTasks,
     db: SupabaseClient | None = Depends(get_supabase),
     settings: Settings = Depends(get_settings),
 ):
@@ -61,8 +56,18 @@ def ingest_video(
         ins_res = db.table("videos").insert(video_data).execute()
         video = ins_res.data[0]
 
-    # Publish to QStash
-    if settings.QSTASH_TOKEN:
+    # Publish to QStash or run locally in BackgroundTasks
+    if settings.ENVIRONMENT == "local":
+        background_tasks.add_task(
+            process_video_task,
+            video["id"],
+            "transcribe",
+            0.0,
+            db,
+            settings,
+            background_tasks,
+        )
+    elif settings.QSTASH_TOKEN:
         q_client = QStash(token=settings.QSTASH_TOKEN)
         q_client.message.publish_json(
             url=f"{settings.BACKEND_URL}/api/v1/internal/process-video",

@@ -6,8 +6,8 @@ from google import genai
 from pydantic import BaseModel
 from supabase import Client as SupabaseClient
 
-from app.api.v1.ingest import get_supabase
 from app.core.config import Settings, get_settings
+from app.core.database import get_supabase
 from app.services.transcription import get_embedding
 
 router = APIRouter()

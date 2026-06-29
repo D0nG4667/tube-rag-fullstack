@@ -38,6 +38,16 @@ def get_db() -> Generator[SupabaseClient, None, None]:
         raise
 
 
+def get_supabase() -> SupabaseClient | None:
+    """
+    Safely retrieves the singleton Supabase client, returning None if unconfigured.
+    """
+    try:
+        return get_supabase_client()
+    except Exception:
+        return None
+
+
 async def verify_db_connection() -> bool:
     """
     Verifies that the Supabase database connection is established and reachable.
