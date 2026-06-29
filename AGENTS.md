@@ -19,11 +19,17 @@ COMPLEX WORKSPACE LAYOUT (Dual-Pane Split):
 - Main Interactive Core: Split into a video viewport container utilizing `react-player` and a persistent, agentic chat module.
 - Deep-Link Experience: LLM results must extract precise `start_time` metadata. Citations must render as interactive shadcn Badges. Clicking a badge must directly trigger the `seekTo()` method on the browser player instance to adjust playback position instantly.
 
+ADVANCED AGENTIC MULTI-DOCUMENT RESEARCH & Q&A ASSISTANT:
+Implement an advanced, multi-agent orchestrator powered by Gemini 2.5 Flash capable of multi-document/cross-video synthesis:
+1. Workspace Level Analysis: Users can ask complex synthesis questions spanning an entire folder/playlist of up to 10 embedded videos (e.g., "Compare the conflicting engineering trade-offs of microservices discussed across all these tech lectures").
+2. Agentic Research Planner: When a cross-video research query is initiated, the agent must systematically break down the user request into multiple search vectors, execute parallel semantic retrievals against Supabase pgvector filtering by workspace_id, evaluate conflicts, and format an organized markdown research report.
+3. Multi-Document Grounding & Citation: Every synthesized response must support multi-document cross-referencing. Citations must clearly display the unique source video identity AND its exact timestamp badge (e.g., [VideoA @ 12:40], [VideoB @ 04:15]). Clicking any badge syncs the client-side browser video player to that video asset and instantly seeks to the designated second.
+
 CORE FEATURES & INGESTION PIPELINE (The Serverless FastAPI Cloud Blueprint):
 1. The 3-Stage Ingestion Flow:
-   - Stage 1 (Public Endpoint `/api/v1/ingest`): Receives the YouTube URL, publishes a message to Upstash QStash, and immediately returns a 202 Accepted response to the frontend.
-   - Stage 2 (Internal Webhook Endpoint `/api/v1/internal/process-video`): Receives the webhook payload from QStash. It attempts to fetch native transcripts using `youtube-transcript-api`. If none exist, it runs `yt-dlp` to extract `.m4a` audio and transcribes via OpenAI Whisper API. (Execute this in a non-blocking thread so the QStash HTTP connection remains open).
-   - Stage 3: Chunk the text and embed it into Supabase pgvector. CRITICAL: Every vector chunk MUST include metadata for `video_id`, `channel_name`, `start_time`, and `end_time`.
+   - Stage 1 (Public Endpoint `/api/ingest`): Receives the YouTube URL, publishes a message to Upstash QStash, and immediately returns a 202 Accepted response to the frontend.
+   - Stage 2 (Internal Webhook Endpoint `/api/internal/process-video`): Receives the webhook payload from QStash. It attempts to fetch native transcripts using `youtube-transcript-api`. If none exist, it runs `yt-dlp` to extract `.m4a` audio and transcribes via OpenAI Whisper API. (Execute this in a non-blocking thread so the QStash HTTP connection remains open).
+   - Stage 3: Chunk the text and embed it into Supabase pgvector. CRITICAL: Every vector chunk MUST include metadata for `video_id`, `workspace_id`, `channel_name`, `start_time`, and `end_time`.
 2. Visual-Aware (Frame Sampling): Include a QStash queued placeholder function that uses a vision model to sample frames every 10 seconds to extract text from slide decks or code screens.
 
 SUPERPOWERS WORKFLOW & CODE ARCHITECTURE CONSTRAINTS:
