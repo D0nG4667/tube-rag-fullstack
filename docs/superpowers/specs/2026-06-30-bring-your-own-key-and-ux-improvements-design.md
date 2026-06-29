@@ -1,6 +1,6 @@
 # Design Spec: Bring Your Own Key & Workspace UX Improvements
 
-This specification details Phase 2.0 UX and API capabilities for **TubeRAG**, supporting custom Gemini API keys, historical node deletion, search filters, full mobile responsiveness, and an interactive StudyStudio featuring mindmaps.
+This specification details Phase 2.0 UX and API capabilities for **TubeRAG**, supporting custom Gemini API keys, historical node deletion, search filters, full mobile responsiveness, an interactive StudyStudio featuring mindmaps, and sharing features with SEO assets.
 
 ---
 
@@ -43,11 +43,21 @@ This specification details Phase 2.0 UX and API capabilities for **TubeRAG**, su
 * **Podcast Audio Overview:**
   * Uses `window.speechSynthesis` to speak podcast scripts with alternating male/female voices, highlighting active host cards in real-time.
 
-### 4. Historical Video Node Search & Statuses
+### 4. Share CTAs & Brand Assets (SEO & Favicons)
+* **Share Guide CTAs:**
+  * Add a sharing action dropdown inside the Studio drawer header.
+  * Users can share generated outlines or podcast summary links to **Twitter / X**, **LinkedIn**, and **Clipboard copy**.
+* **SEO Metadata & OpenGraph Assets:**
+  * Create `frontend/public/` folder.
+  * Generate a custom high-fidelity neon cybernetic logo: `logo.png`.
+  * Generate a customized social preview card (1200x630): `og-image.png`.
+  * Link favicon to `logo.png` or `favicon.ico`. Configure Next.js layout metadata for proper SEO titles, description, open-graph tags, and Twitter Card attributes.
+
+### 5. Historical Video Node Search & Statuses
 * **Sidebar Filter:** Add a search input at the top of the sidebar. Filter the list of videos in real-time as the user types.
 * **Status Badges:** Display corresponding visual indicators for ingestion state (Ready: green, Processing: yellow/pulse, Failed: red) in the list nodes.
 
-### 5. Mobile Responsiveness & Hamburger Drawer
+### 6. Mobile Responsiveness & Hamburger Drawer
 * **Mobile Stack Layout:** Responsive Tailwind grids stack panels vertically on mobile screens:
   * Left and Right widths adapt to `w-full` instead of draggable split percentage when viewport is small.
   * Toggle/Disable resizer handle bar drag listener on mobile touch screens.
@@ -63,6 +73,7 @@ This specification details Phase 2.0 UX and API capabilities for **TubeRAG**, su
 ### Manual Verification
 - **AES Key Test:** Configure a key and passphrase; reload page. Verify key is decrypted only when entering correct password. Verify RAG fails with wrong password.
 - **Mindmap Graph Test:** Open the Mindmap view; verify floating node cards render and are linked by SVG curves. Verify clicking a node seeks the video player to the correct timestamp.
+- **Share Test:** Click share to Twitter; verify pre-populated intent URL is correctly formatted with StudyStudio metadata.
 - **Search Test:** Type video titles in the filter search box; verify the sidebar list narrows down correctly.
 - **Delete Test:** Delete a video; verify it disappears from the list and all chunks are removed from the DB.
 - **Responsive Test:** View the app on a mobile emulation window; verify panels stack vertically and the hamburger drawer slides open cleanly.

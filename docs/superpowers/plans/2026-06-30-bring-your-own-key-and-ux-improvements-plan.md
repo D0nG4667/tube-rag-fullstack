@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement client-side AES key encryption, StudyStudio 3-column workspace architecture (Sources left, Chat & Video center, Studio right with outline, podcast audio overview, and interactive SVG mindmap), historical video management (search & delete), and mobile responsiveness.
+**Goal:** Implement client-side AES key encryption, StudyStudio 3-column workspace architecture (Sources left, Chat & Video center, Studio right with outline, podcast audio overview, and interactive SVG mindmap), brand assets (favicons, SEO metadata, OG preview images), share CTAs, historical video management (search & delete), and mobile responsiveness.
 
 ---
 
@@ -16,6 +16,7 @@
 │  - Video List   │  - Video Player                  │  - Outlines     │
 │  - Search Filter│  - RAG Chat Console              │  - Podcast Play │
 │  - Status Rings │  - Custom Key Settings           │  - SVG Mindmap  │
+│                 │                                  │  - Share CTA    │
 │                 │                                  │                 │
 └─────────────────┴──────────────────────────────────┴─────────────────┘
 ```
@@ -233,7 +234,24 @@
 
 ---
 
-### Task 5: Responsive Mobile Hamburger Layouts
+### Task 5: Brand Assets (SEO & Favicons) & Sharing Integrations
+
+**Files:**
+- Modify: `frontend/src/app/layout.tsx`
+- Modify: `frontend/src/components/ChatPanel.tsx`
+
+- [ ] **Step 1: Generate Brand Logo, OG image, and Favicon**
+  * Generate a modern, neon-cybernetic square logo: `frontend/public/logo.png`.
+  * Generate a stunning social card visual (1200x630): `frontend/public/og-image.png`.
+  * Add a standard favicon mapping to `logo.png` or `favicon.ico`.
+- [ ] **Step 2: Configure Layout SEO Metadata**
+  Modify [layout.tsx](../../../frontend/src/app/layout.tsx) to declare high-fidelity OpenGraph and Twitter card configurations referencing the generated public images.
+- [ ] **Step 3: Add share CTA menu**
+  In [ChatPanel.tsx](../../../frontend/src/components/ChatPanel.tsx) (or StudyStudio renderer), add a floating share button offering direct sharing options (preformatted links with metadata for Twitter/X, LinkedIn, and copy link to clipboard).
+
+---
+
+### Task 6: Responsive Mobile Hamburger Layouts
 
 **Files:**
 - Modify: `frontend/src/app/page.tsx`
