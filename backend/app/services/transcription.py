@@ -31,7 +31,7 @@ def get_embedding(text: str) -> list[float]:
 
 
 def time_aware_chunker(
-    transcript_items: list[dict], max_chars: int = 800, max_gap: float = 3.0
+    transcript_items: list, max_chars: int = 800, max_gap: float = 3.0
 ) -> list[dict]:
     """
     Chunks transcript items based on max character length and maximum silence gap between items.
@@ -41,10 +41,12 @@ def time_aware_chunker(
     current_length = 0
 
     for item in transcript_items:
-        text = item["text"]
-        start = item["start"]
-        duration = item.get("duration", 0.0)
-        start + duration
+        if isinstance(item, dict):
+            text = item.get("text", "")
+            start = item.get("start", 0.0)
+        else:
+            text = getattr(item, "text", "")
+            start = getattr(item, "start", 0.0)
 
         if not current_chunk:
             current_chunk.append(item)
@@ -52,18 +54,45 @@ def time_aware_chunker(
             continue
 
         prev_item = current_chunk[-1]
-        prev_end = prev_item["start"] + prev_item.get("duration", 0.0)
+        if isinstance(prev_item, dict):
+            prev_start = prev_item.get("start", 0.0)
+            prev_duration = prev_item.get("duration", 0.0)
+        else:
+            prev_start = getattr(prev_item, "start", 0.0)
+            prev_duration = getattr(prev_item, "duration", 0.0)
+
+        prev_end = prev_start + prev_duration
         gap = start - prev_end
 
         if current_length + len(text) > max_chars or gap > max_gap:
             # Emit chunk
-            chunk_text = " ".join([x["text"] for x in current_chunk])
+            chunk_text = " ".join(
+                [
+                    x.get("text", "") if isinstance(x, dict) else getattr(x, "text", "")
+                    for x in current_chunk
+                ]
+            )
+
+            first_item = current_chunk[0]
+            last_item = current_chunk[-1]
+
+            if isinstance(first_item, dict):
+                start_time = first_item.get("start", 0.0)
+            else:
+                start_time = getattr(first_item, "start", 0.0)
+
+            if isinstance(last_item, dict):
+                end_time = last_item.get("start", 0.0) + last_item.get("duration", 0.0)
+            else:
+                end_time = getattr(last_item, "start", 0.0) + getattr(
+                    last_item, "duration", 0.0
+                )
+
             chunks.append(
                 {
                     "content": chunk_text,
-                    "start_time": current_chunk[0]["start"],
-                    "end_time": current_chunk[-1]["start"]
-                    + current_chunk[-1].get("duration", 0.0),
+                    "start_time": start_time,
+                    "end_time": end_time,
                 }
             )
             current_chunk = [item]
@@ -73,13 +102,33 @@ def time_aware_chunker(
             current_length += len(text)
 
     if current_chunk:
-        chunk_text = " ".join([x["text"] for x in current_chunk])
+        chunk_text = " ".join(
+            [
+                x.get("text", "") if isinstance(x, dict) else getattr(x, "text", "")
+                for x in current_chunk
+            ]
+        )
+
+        first_item = current_chunk[0]
+        last_item = current_chunk[-1]
+
+        if isinstance(first_item, dict):
+            start_time = first_item.get("start", 0.0)
+        else:
+            start_time = getattr(first_item, "start", 0.0)
+
+        if isinstance(last_item, dict):
+            end_time = last_item.get("start", 0.0) + last_item.get("duration", 0.0)
+        else:
+            end_time = getattr(last_item, "start", 0.0) + getattr(
+                last_item, "duration", 0.0
+            )
+
         chunks.append(
             {
                 "content": chunk_text,
-                "start_time": current_chunk[0]["start"],
-                "end_time": current_chunk[-1]["start"]
-                + current_chunk[-1].get("duration", 0.0),
+                "start_time": start_time,
+                "end_time": end_time,
             }
         )
     return chunks
@@ -107,7 +156,19 @@ def download_audio_segment(url: str, start_sec: float, end_sec: float, out_path:
         out_path,
         url,
     ]
-    subprocess.run(cmd, check=True)
+    try:
+        subprocess.run(cmd, check=True)
+    except FileNotFoundError as e:
+        if settings.ENVIRONMENT == "local":
+            print(
+                "WARNING: yt-dlp was not found on PATH. Creating dummy audio segment for local development bypass."
+            )
+            with open(out_path, "wb") as f:
+                f.write(b"MOCK AUDIO DATA")
+            return
+        raise RuntimeError(
+            "yt-dlp is not installed or not in the system PATH. Please install it to support audio extraction fallback."
+        ) from e
 
 
 def transcribe_audio_with_gemini(audio_path: str) -> str:
