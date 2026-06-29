@@ -147,7 +147,7 @@ begin
         vc.chunk_type,
         vc.image_url,
         vc.metadata,
-        coalesce(1.0 / (rrf_k + vs.rank), 0.0) + coalesce(1.0 / (rrf_k + fs.rank), 0.0) as combined_score
+        (coalesce(1.0 / (rrf_k + vs.rank), 0.0) + coalesce(1.0 / (rrf_k + fs.rank), 0.0))::double precision as combined_score
     from public.video_chunks vc
     left join vector_search vs on vc.id = vs.id
     left join fts_search fs on vc.id = fs.id

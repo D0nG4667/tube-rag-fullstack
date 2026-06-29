@@ -3,9 +3,11 @@ import sys
 
 import psycopg2
 
+from app.core.config import settings
+
 
 def run():
-    db_url = os.environ.get("DATABASE_URL")
+    db_url = os.environ.get("DATABASE_URL") or settings.DATABASE_URL
     if not db_url:
         print("DATABASE_URL is not set.")
         return
