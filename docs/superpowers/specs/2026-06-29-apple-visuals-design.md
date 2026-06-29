@@ -8,7 +8,7 @@ This specification details Phase 1 of the front-end redesign for the **TubeRAG**
 ## Proposed Changes
 
 ### 1. 3D Camera Parallax & Node Select Zoom
-* **Component:** [MatrixCanvas.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/components/MatrixCanvas.tsx)
+* **Component:** [MatrixCanvas.tsx](../../../frontend/src/components/MatrixCanvas.tsx)
 * **Parallax Orbit:**
   * Track user cursor coordinates client-side (normalized from `-1` to `1`).
   * In the R3F `<Canvas>` frame loop (`useFrame`), interpolate (lerp) the camera's position towards the cursor coordinate offset.

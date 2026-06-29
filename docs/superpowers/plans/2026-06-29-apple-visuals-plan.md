@@ -32,7 +32,7 @@
   ```
 
 - [ ] **Step 2: Render the premium Coffee pill button in Page Header**
-  Modify [page.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/app/page.tsx) to read `NEXT_PUBLIC_COFFEE_URL` and render a minimalist neon glow Coffee Pill button inside the header bar next to the active video tag:
+  Modify [page.tsx](../../../frontend/src/app/page.tsx) to read `NEXT_PUBLIC_COFFEE_URL` and render a minimalist neon glow Coffee Pill button inside the header bar next to the active video tag:
   ```tsx
   const coffeeUrl = process.env.NEXT_PUBLIC_COFFEE_URL || "https://sociabuzz.com/gabcares/support";
   ```
@@ -75,7 +75,7 @@
 - Produces: Cursor parallax camera lerp and GSAP video selection tween
 
 - [ ] **Step 1: Implement global mouse listener inside MatrixCanvas**
-  Modify [MatrixCanvas.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/components/MatrixCanvas.tsx) to declare cursor offset coordinates ref:
+  Modify [MatrixCanvas.tsx](../../../frontend/src/components/MatrixCanvas.tsx) to declare cursor offset coordinates ref:
   ```tsx
   const mouseRef = useRef({ x: 0, y: 0 })
   const zoomOffsetRef = useRef({ z: 0 })
@@ -99,7 +99,7 @@
     if (!selectedVideoId) return
     gsap.fromTo(
       zoomOffsetRef.current,
-      { z: -2 },
+      { z: -2.5 },
       { z: 0, duration: 1.5, ease: 'power2.out' }
     )
   }, [selectedVideoId])
@@ -128,7 +128,7 @@
   ```
 
 - [ ] **Step 4: Update page.tsx to pass selectedVideoId**
-  Modify [page.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/app/page.tsx)'s `MatrixCanvas` invocation:
+  Modify [page.tsx](../../../frontend/src/app/page.tsx)'s `MatrixCanvas` invocation:
   ```tsx
   <MatrixCanvas active={hasActiveJob} selectedVideoId={selectedVideo?.id || ''} />
   ```
@@ -152,13 +152,13 @@
 - Modify: `frontend/src/components/ControlDrawer.tsx`
 
 - [ ] **Step 1: Refactor ChatPanel glass styles**
-  Modify [ChatPanel.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/components/ChatPanel.tsx)'s main shell to float using:
+  Modify [ChatPanel.tsx](../../../frontend/src/components/ChatPanel.tsx)'s main shell to float using:
   ```className
   "flex flex-col h-full rounded-2xl backdrop-blur-2xl bg-zinc-950/20 border border-zinc-800/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] overflow-hidden"
   ```
 
 - [ ] **Step 2: Refactor ControlDrawer styling**
-  Modify [ControlDrawer.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/components/ControlDrawer.tsx)'s main wrapper to support absolute overlay position:
+  Modify [ControlDrawer.tsx](../../../frontend/src/components/ControlDrawer.tsx)'s main wrapper to support absolute overlay position:
   ```className
   "relative z-20 flex flex-col h-screen backdrop-blur-2xl bg-zinc-950/20 border-r border-zinc-800/40 shadow-2xl transition-all duration-300"
   ```

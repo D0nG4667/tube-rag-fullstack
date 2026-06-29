@@ -11,19 +11,19 @@ We have successfully completed all core feature implementation tasks for Phase 1
 - **Coffee Pill Badge:** Rendered a premium glassmorphic pill button featuring a dynamic pulsing indicator next to the active video YT ID badge in the header toolbar.
 
 ### Task 2: R3F Mouse Parallax & GSAP Selection Zoom
-- **Parallax camera orbit:** Mounted window coordinates event listener tracking normalized mouse cursor coordinates in [MatrixCanvas.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/components/MatrixCanvas.tsx). Camera position is dynamically lerped inside `useFrame`.
+- **Parallax camera orbit:** Mounted window coordinates event listener tracking normalized mouse cursor coordinates in [MatrixCanvas.tsx](../../../frontend/src/components/MatrixCanvas.tsx). Camera position is dynamically lerped inside `useFrame`.
 - **GSAP Focus Zoom:** Integrated GSAP to animate camera coordinates (simulating a zoom-in/focus sequence) whenever the `selectedVideoId` changes.
 
 ### Task 3: Frosted Glass HUD Styles
-- **Glass Refraction:** Upgraded the global `.glass-panel` style rule in [globals.css](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/app/globals.css) to increase frosted background blur to `24px` and add soft drop shadows.
-- **HUD Shells:** Applied frosted styling to the sidebar drawer in [ControlDrawer.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/components/ControlDrawer.tsx) and the chat console in [ChatPanel.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/components/ChatPanel.tsx).
+- **Glass Refraction:** Upgraded the global `.glass-panel` style rule in [globals.css](../../../frontend/src/app/globals.css) to increase frosted background blur to `24px` and add soft drop shadows.
+- **HUD Shells:** Applied frosted styling to the sidebar drawer in [ControlDrawer.tsx](../../../frontend/src/components/ControlDrawer.tsx) and the chat console in [ChatPanel.tsx](../../../frontend/src/components/ChatPanel.tsx).
 
 ---
 
 ## 2. Directory Layout & Artifacts
 
-- **Page Layout Dashboard:** [page.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/app/page.tsx)
-- **WebGL Particle Canvas:** [MatrixCanvas.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/components/MatrixCanvas.tsx)
-- **Control Drawer:** [ControlDrawer.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/components/ControlDrawer.tsx)
-- **Chat Panel:** [ChatPanel.tsx](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/components/ChatPanel.tsx)
-- **Global Styles:** [globals.css](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/frontend/src/app/globals.css)
+- **Page Layout Dashboard:** [page.tsx](../../../frontend/src/app/page.tsx)
+- **WebGL Particle Canvas:** [MatrixCanvas.tsx](../../../frontend/src/components/MatrixCanvas.tsx)
+- **Control Drawer:** [ControlDrawer.tsx](../../../frontend/src/components/ControlDrawer.tsx)
+- **Chat Panel:** [ChatPanel.tsx](../../../frontend/src/components/ChatPanel.tsx)
+- **Global Styles:** [globals.css](../../../frontend/src/app/globals.css)
