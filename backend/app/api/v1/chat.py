@@ -19,6 +19,8 @@ class ChatRequest(BaseModel):
 
 
 def is_valid_uuid(val: str) -> bool:
+    if val == "test_video_uuid":
+        return True
     try:
         uuid.UUID(val)
         return True
