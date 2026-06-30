@@ -32,6 +32,7 @@ interface ControlDrawerProps {
 	isOpen: boolean;
 	onToggleOpen: () => void;
 	locale?: string;
+	onShowToast?: (msg: string, type: "success" | "error" | "info") => void;
 }
 
 export default function ControlDrawer({
@@ -43,6 +44,7 @@ export default function ControlDrawer({
 	isOpen,
 	onToggleOpen,
 	locale = "en",
+	onShowToast,
 }: ControlDrawerProps) {
 	const t = translations[locale as Locale] || translations.en;
 	const isRtl = locale === "ar";
@@ -108,7 +110,7 @@ export default function ControlDrawer({
 			onIngestSuccess();
 		} catch (err) {
 			const error = err as Error;
-			alert(error.message);
+			onShowToast?.(error.message, "error");
 		}
 	};
 

@@ -2,11 +2,13 @@
 
 import { motion } from "framer-motion";
 import {
+	AlertTriangle,
 	BookOpen,
 	Check,
 	ChevronLeft,
 	ChevronRight,
 	Copy,
+	Download,
 	Linkedin,
 	Loader2,
 	Network,
@@ -40,6 +42,7 @@ interface StudyStudioProps {
 	locale?: string;
 	onApiKeyExpired?: () => void;
 	width?: number;
+	onShowToast?: (msg: string, type: "success" | "error" | "info") => void;
 }
 
 interface DialogueTurn {
@@ -74,6 +77,7 @@ export default function StudyStudio({
 	locale = "en",
 	onApiKeyExpired,
 	width = 480,
+	onShowToast,
 }: StudyStudioProps) {
 	const t = translations[locale as Locale] || translations.en;
 	const isRtl = locale === "ar";
@@ -92,6 +96,11 @@ export default function StudyStudio({
 	const [podcastAudioUrl, setPodcastAudioUrl] = useState<string | null>(null);
 	const [loadingAudio, setLoadingAudio] = useState(false);
 	const [audioError, setAudioError] = useState<string | null>(null);
+	const [currentTime, setCurrentTime] = useState(0);
+	const [duration, setDuration] = useState(0);
+	const [podcastScriptError, setPodcastScriptError] = useState<string | null>(
+		null,
+	);
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 
 	// Handwritten Notes State
@@ -101,11 +110,13 @@ export default function StudyStudio({
 	// Mindmap State
 	const [mindmap, setMindmap] = useState<MindmapData | null>(null);
 	const [loadingMindmap, setLoadingMindmap] = useState(false);
+	const [mindmapError, setMindmapError] = useState<string | null>(null);
 	const [isFullscreenMindmap, setIsFullscreenMindmap] = useState(false);
 
 	// Share CTA Dropdown State
 	const [isShareOpen, setIsShareOpen] = useState(false);
 	const [copied, setCopied] = useState(false);
+	const [linkedinCopied, setLinkedinCopied] = useState(false);
 
 	// Web Speech synthesis references
 	const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -185,6 +196,7 @@ export default function StudyStudio({
 		if (!videoId) return;
 		setLoadingPodcast(true);
 		setAudioError(null);
+		setPodcastScriptError(null);
 		try {
 			const res = await fetch(
 				`${process.env.NEXT_PUBLIC_API_URL}/api/v1/notebook/podcast`,
@@ -208,10 +220,10 @@ export default function StudyStudio({
 			setCurrentPodcastIndex(-1);
 			setIsPlayingPodcast(false);
 		} catch {
-			alert(
+			setPodcastScriptError(
 				isRtl
-					? "⚠️ فشل في إنشاء سيناريو البودكاست."
-					: "⚠️ Failed to generate Podcast Script.",
+					? "⚠️ فشل في إنشاء سيناريو البودكاست. يرجى التحقق من إعدادات المفتاح والمحاولة لاحقاً."
+					: "⚠️ Failed to generate Podcast Script. Please check your API key configuration and try again.",
 			);
 		} finally {
 			setLoadingPodcast(false);
@@ -223,6 +235,8 @@ export default function StudyStudio({
 		if (podcastScript.length === 0) return;
 		setLoadingAudio(true);
 		setAudioError(null);
+		setCurrentTime(0);
+		setDuration(0);
 		try {
 			const res = await fetch(
 				`${process.env.NEXT_PUBLIC_API_URL}/api/v1/notebook/podcast-audio`,
@@ -307,6 +321,7 @@ export default function StudyStudio({
 	const generateMindmap = async () => {
 		if (!videoId) return;
 		setLoadingMindmap(true);
+		setMindmapError(null);
 		try {
 			const res = await fetch(
 				`${process.env.NEXT_PUBLIC_API_URL}/api/v1/notebook/mindmap`,
@@ -328,10 +343,10 @@ export default function StudyStudio({
 			const data = await res.json();
 			setMindmap(data);
 		} catch {
-			alert(
+			setMindmapError(
 				isRtl
-					? "⚠️ فشل في إنشاء خريطة المفاهيم."
-					: "⚠️ Failed to generate Concept Map.",
+					? "⚠️ فشل في إنشاء خريطة المفاهيم. يرجى التحقق من إعدادات المفتاح والمحاولة لاحقاً."
+					: "⚠️ Failed to generate Concept Map. Please check your API key configuration and try again.",
 			);
 		} finally {
 			setLoadingMindmap(false);
@@ -356,6 +371,8 @@ export default function StudyStudio({
 						b.leaves.map((l) => `  * ${l.text} (@ ${l.seconds}s)`).join("\n"),
 				)
 				.join("\n\n");
+		} else if (activeTab === "notes" && notes) {
+			shareText += notes;
 		} else {
 			shareText += "Insights and outlines prepared in StudyStudio.";
 		}
@@ -363,6 +380,276 @@ export default function StudyStudio({
 		navigator.clipboard.writeText(shareText);
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
+	};
+
+	// Download Outline as Markdown
+	const downloadOutline = () => {
+		if (!outline) return;
+		const blob = new Blob([outline], { type: "text/markdown" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `outline-${videoId}.md`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		onShowToast?.(
+			isRtl
+				? "📥 تم تحميل المخطط التفصيلي!"
+				: "📥 Outline downloaded successfully!",
+			"success",
+		);
+	};
+
+	// Download Podcast Audio
+	const downloadPodcastAudio = () => {
+		if (!podcastAudioUrl) return;
+		const a = document.createElement("a");
+		a.href = podcastAudioUrl;
+		a.download = `podcast-${videoId}.wav`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		onShowToast?.(
+			isRtl
+				? "📥 تم تحميل الملف الصوتي للبودكاست!"
+				: "📥 Podcast audio downloaded successfully!",
+			"success",
+		);
+	};
+
+	// Download Mindmap SVG
+	const downloadMindmapSvg = () => {
+		const svgEl =
+			document.querySelector(".mindmap-viewport svg") ||
+			document.querySelector("svg");
+		if (!svgEl) return;
+		const serializer = new XMLSerializer();
+		const source = serializer.serializeToString(svgEl);
+		const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(source)}`;
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `mindmap-${videoId}.svg`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		onShowToast?.(
+			isRtl
+				? "📥 تم تحميل خريطة المفاهيم كملف SVG!"
+				: "📥 Mindmap SVG downloaded successfully!",
+			"success",
+		);
+	};
+
+	// Download Notes as text
+	const downloadNotesAsText = () => {
+		if (!notes) return;
+		const blob = new Blob([notes], { type: "text/plain" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `notes-${videoId}.txt`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		onShowToast?.(
+			isRtl
+				? "📥 تم تحميل الملاحظات النصية!"
+				: "📥 Text notes downloaded successfully!",
+			"success",
+		);
+	};
+
+	// Seek Audio track timeline position
+	const handleAudioSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const val = Number(e.target.value);
+		setCurrentTime(val);
+		if (audioRef.current) {
+			audioRef.current.currentTime = val;
+		}
+	};
+
+	// Download Notes as PNG image drawn on dark ruled paper canvas
+	const downloadNotesAsImage = () => {
+		if (!notes) return;
+		const canvas = document.createElement("canvas");
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+
+		const lines = notes.split("\n");
+		const lineHeight = 35;
+		const padding = 50;
+		canvas.width = 850;
+		canvas.height = Math.max(600, lines.length * lineHeight + 120);
+
+		// Style values matching dark mode theme
+		ctx.fillStyle = "#09090b"; // Zinc 950
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+		// Draw notebook title header
+		ctx.fillStyle = "rgba(6, 182, 212, 0.4)"; // Cyan 500
+		ctx.font = "bold 14px sans-serif";
+		ctx.fillText("TubeRAG CALLIGRAPHY STUDY NOTES", padding + 50, 45);
+
+		// Draw ruled horizontal lines
+		ctx.strokeStyle = "rgba(63, 63, 70, 0.35)"; // Zinc 800
+		ctx.lineWidth = 1;
+		for (let y = 90; y < canvas.height - 30; y += lineHeight) {
+			ctx.beginPath();
+			ctx.moveTo(padding, y);
+			ctx.lineTo(canvas.width - padding, y);
+			ctx.stroke();
+		}
+
+		// Draw red notebook left/right margin line
+		ctx.strokeStyle = "rgba(239, 68, 68, 0.25)"; // Red 500
+		ctx.lineWidth = 1.5;
+		ctx.beginPath();
+		if (isRtl) {
+			ctx.moveTo(canvas.width - 90, 0);
+			ctx.lineTo(canvas.width - 90, canvas.height);
+		} else {
+			ctx.moveTo(90, 0);
+			ctx.lineTo(90, canvas.height);
+		}
+		ctx.stroke();
+
+		// Set text styles
+		ctx.fillStyle = isRtl
+			? "rgba(6, 182, 212, 0.9)"
+			: "rgba(124, 58, 237, 0.9)"; // Cyan or Violet
+		ctx.font = "22px 'Caveat', cursive, sans-serif";
+		if (isRtl) {
+			ctx.font = "20px 'Aref Ruqaa', serif";
+			ctx.textAlign = "right";
+			for (let i = 0; i < lines.length; i++) {
+				ctx.fillText(lines[i], canvas.width - 110, 80 + i * lineHeight);
+			}
+		} else {
+			ctx.textAlign = "left";
+			for (let i = 0; i < lines.length; i++) {
+				ctx.fillText(lines[i], 110, 80 + i * lineHeight);
+			}
+		}
+
+		const dataUrl = canvas.toDataURL("image/png");
+		const a = document.createElement("a");
+		a.href = dataUrl;
+		a.download = `notes-${videoId}.png`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		onShowToast?.(
+			isRtl
+				? "📥 تم تحميل الملاحظات المصورة!"
+				: "📥 Calligraphy notes image downloaded successfully!",
+			"success",
+		);
+	};
+
+	// Print active tab content directly into a clean template
+	const printActiveTab = () => {
+		onShowToast?.(
+			isRtl ? "🖨️ فتح نافذة الطباعة..." : "🖨️ Opening print dialog...",
+			"info",
+		);
+		const printWindow = window.open("", "_blank");
+		if (!printWindow) return;
+
+		let tabTitle = "";
+		let contentHtml = "";
+
+		if (activeTab === "outline") {
+			tabTitle = locale === "ar" ? "المخطط التفصيلي" : "Study Outline";
+			contentHtml = `
+				<h1 style="color: #06b6d4; font-size: 24px;">${videoTitle}</h1>
+				<h2 style="color: #4b5563; font-size: 16px;">${tabTitle}</h2>
+				<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;" />
+				<div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #374151;">${outline || "No outline available."}</div>
+			`;
+		} else if (activeTab === "podcast") {
+			tabTitle = locale === "ar" ? "سيناريو البودكاست" : "Podcast Script";
+			const turns = podcastScript
+				.map(
+					(turn) => `
+				<div style="margin-bottom: 15px; font-size: 13px;">
+					<strong style="color: #7c3aed; text-transform: uppercase;">🎙️ ${turn.host}:</strong>
+					<p style="margin: 4px 0 0 0; line-height: 1.5; color: #374151;">${turn.text}</p>
+				</div>
+			`,
+				)
+				.join("");
+			contentHtml = `
+				<h1 style="color: #06b6d4; font-size: 24px;">${videoTitle}</h1>
+				<h2 style="color: #4b5563; font-size: 16px;">${tabTitle}</h2>
+				<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;" />
+				${turns || "<p>No podcast script available.</p>"}
+			`;
+		} else if (activeTab === "mindmap") {
+			tabTitle = locale === "ar" ? "خريطة المفاهيم" : "Concept Map";
+			const branches = mindmap
+				? mindmap.branches
+						.map(
+							(b) => `
+				<div style="margin-bottom: 20px;">
+					<h3 style="color: #06b6d4; font-size: 16px; margin: 0 0 8px 0;">📂 ${b.title}</h3>
+					<ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: #374151;">
+						${b.leaves.map((l) => `<li>${l.text} (seek: ${formatTime(l.seconds)})</li>`).join("")}
+					</ul>
+				</div>
+			`,
+						)
+						.join("")
+				: "<p>No concept map available.</p>";
+
+			contentHtml = `
+				<h1 style="color: #06b6d4; font-size: 24px;">${videoTitle}</h1>
+				<h2 style="color: #4b5563; font-size: 16px;">${tabTitle}: ${mindmap?.subject || ""}</h2>
+				<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;" />
+				${branches}
+			`;
+		} else if (activeTab === "notes") {
+			tabTitle =
+				locale === "ar" ? "الملاحظات الدراسية" : "Calligraphy Study Notes";
+			contentHtml = `
+				<h1 style="color: #7c3aed; font-size: 24px;">${videoTitle}</h1>
+				<h2 style="color: #4b5563; font-size: 16px;">${tabTitle}</h2>
+				<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;" />
+				<div style="font-family: serif; font-size: 18px; line-height: 1.8; color: #1e3a8a; white-space: pre-wrap;">${notes || "No notes available."}</div>
+			`;
+		}
+
+		printWindow.document.write(`
+			<html>
+				<head>
+					<title>${tabTitle} - TubeRAG</title>
+					<style>
+						body {
+							font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+							padding: 40px;
+							color: #111827;
+							background: white;
+							max-width: 800px;
+							margin: 0 auto;
+						}
+						@media print {
+							body { padding: 20px; }
+							h1, h2, h3 { page-break-after: avoid; }
+						}
+					</style>
+				</head>
+				<body>
+					${contentHtml}
+					<script>
+						window.onload = function() {
+							window.print();
+							setTimeout(function() { window.close(); }, 500);
+						};
+					</script>
+				</body>
+			</html>
+		`);
+		printWindow.document.close();
 	};
 
 	return (
@@ -422,7 +709,16 @@ export default function StudyStudio({
 											!window.location.host.includes("localhost")
 												? window.location.href
 												: "https://tuberag.vercel.app";
-										const xText = `🧠 Synthesized a technical deep dive of "${videoTitle}" using TubeRAG!\n\n✨ Instant semantic outlines, interactive concept maps, and audio discussion scripts.\n\nTry the workspace: ${shareUrl} 🚀\n\n#AI #SaaS #TubeRAG #NextJS #Gemini`;
+
+										let shareContext = "a comprehensive study outline";
+										if (activeTab === "podcast")
+											shareContext = "an interactive audio podcast script";
+										else if (activeTab === "mindmap")
+											shareContext = "an interconnected concept mindmap";
+										else if (activeTab === "notes")
+											shareContext = "handwritten calligraphy study notes";
+
+										const xText = `🧠 Synthesized ${shareContext} of "${videoTitle}" using TubeRAG!\n\nCheck it out here: ${shareUrl} 🚀\n\n#AI #SaaS #TubeRAG #NextJS #Gemini`;
 										const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(xText)}`;
 										window.open(url, "_blank");
 									}}
@@ -439,31 +735,95 @@ export default function StudyStudio({
 											!window.location.host.includes("localhost")
 												? window.location.href
 												: "https://tuberag.vercel.app";
-										const linkedinText = `🚀 Just generated a multi-agent technical breakdown of "${videoTitle}" using TubeRAG!\n\nTubeRAG synthesizes complex lectures and playlists into structured learning assets:\n📝 Multi-document semantic outline\n🎙️ Interactive audio podcast dialogue\n🧠 Interconnected visual concept maps\n\nPowered by Gemini 2.5 Flash & Supabase pgvector.\n\nExplore the project: https://github.com/tuberag\n\n#ArtificialIntelligence #SaaS #Productivity #EdTech #RAG`;
+
+										let shareContext = "a comprehensive study outline";
+										if (activeTab === "podcast")
+											shareContext = "an interactive audio podcast script";
+										else if (activeTab === "mindmap")
+											shareContext = "an interconnected concept mindmap";
+										else if (activeTab === "notes")
+											shareContext = "handwritten calligraphy study notes";
+
+										const linkedinText = `🚀 Just generated ${shareContext} of "${videoTitle}" using TubeRAG!\n\nTubeRAG synthesizes complex lectures and playlists into structured learning assets:\n📝 Multi-document semantic outline\n🎙️ Interactive audio podcast dialogue\n🧠 Interconnected visual concept maps\n\nPowered by Gemini 2.5 Flash & Supabase pgvector.\n\nExplore the project: https://github.com/tuberag\n\n#ArtificialIntelligence #SaaS #Productivity #EdTech #RAG`;
 
 										navigator.clipboard
 											.writeText(linkedinText)
 											.then(() => {
-												alert(
-													isRtl
-														? "📋 تم نسخ نموذج منشور LinkedIn الاحترافي إلى الحافظة! يمكنك لصقه مباشرة في LinkedIn لسهولة المشاركة."
-														: "📋 Professional LinkedIn post template copied to clipboard! You can paste it directly into your post.",
-												);
+												setLinkedinCopied(true);
+												setTimeout(() => setLinkedinCopied(false), 2000);
 											})
 											.catch(() => {});
 
 										const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
 										window.open(url, "_blank");
 									}}
-									className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition"
+									className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-between text-zinc-700 dark:text-zinc-300 transition"
 								>
-									<Linkedin className="w-3.5 h-3.5 text-blue-500" />
-									{t.shareOnLinkedIn}
+									<span className="flex items-center gap-2">
+										<Linkedin className="w-3.5 h-3.5 text-blue-500" />
+										{t.shareOnLinkedIn}
+									</span>
+									{linkedinCopied && (
+										<Check className="w-3 h-3 text-green-400" />
+									)}
 								</button>
+
+								{/* Dynamic Tab Download Options */}
+								{activeTab === "outline" && outline && (
+									<button
+										type="button"
+										onClick={downloadOutline}
+										className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
+									>
+										<Download className="w-3.5 h-3.5 text-cyan-400" />
+										Download Markdown (.md)
+									</button>
+								)}
+								{activeTab === "podcast" && podcastAudioUrl && (
+									<button
+										type="button"
+										onClick={downloadPodcastAudio}
+										className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
+									>
+										<Download className="w-3.5 h-3.5 text-cyan-400" />
+										Download Audio (.wav)
+									</button>
+								)}
+								{activeTab === "mindmap" && mindmap && (
+									<button
+										type="button"
+										onClick={downloadMindmapSvg}
+										className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
+									>
+										<Download className="w-3.5 h-3.5 text-cyan-400" />
+										Download SVG Map (.svg)
+									</button>
+								)}
+								{activeTab === "notes" && notes && (
+									<>
+										<button
+											type="button"
+											onClick={downloadNotesAsImage}
+											className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
+										>
+											<Download className="w-3.5 h-3.5 text-cyan-400" />
+											Download Notes Image (.png)
+										</button>
+										<button
+											type="button"
+											onClick={downloadNotesAsText}
+											className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition"
+										>
+											<Download className="w-3.5 h-3.5 text-purple-400" />
+											Download Notes Text (.txt)
+										</button>
+									</>
+								)}
+
 								<button
 									type="button"
 									onClick={() => {
-										window.print();
+										printActiveTab();
 										setIsShareOpen(false);
 									}}
 									className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
@@ -596,6 +956,12 @@ export default function StudyStudio({
 									<span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">
 										{t.noPodcast}
 									</span>
+									{podcastScriptError && (
+										<div className="p-3 rounded-lg border border-red-500/20 bg-red-950/15 text-red-400 text-xs font-semibold animate-fade-in shadow-[0_0_12px_rgba(239,68,68,0.15)] mb-4 flex items-start gap-2 max-w-sm text-start">
+											<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+											<span>{podcastScriptError}</span>
+										</div>
+									)}
 									<button
 										type="button"
 										onClick={generatePodcastScript}
@@ -626,57 +992,111 @@ export default function StudyStudio({
 										onEnded={() => {
 											setIsPlayingPodcast(false);
 											setCurrentPodcastIndex(-1);
+											setCurrentTime(0);
+										}}
+										onTimeUpdate={() => {
+											if (audioRef.current) {
+												setCurrentTime(audioRef.current.currentTime);
+											}
+										}}
+										onDurationChange={() => {
+											if (audioRef.current) {
+												setDuration(audioRef.current.duration);
+											}
+										}}
+										onLoadedMetadata={() => {
+											if (audioRef.current) {
+												setDuration(audioRef.current.duration);
+											}
 										}}
 										className="hidden"
 									/>
 
-									{/* Mini player interface */}
-									<div className="p-3.5 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4 shrink-0 shadow-lg">
-										<div className="flex flex-col">
-											<span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-												{t.audioOverviewDiscussion}
-												{isPlayingPodcast && (
-													<span className="flex items-center gap-0.5 h-2.5">
-														<span className="w-0.5 h-1.5 bg-accent-cyan rounded animate-bounce [animation-delay:0.1s]" />
-														<span className="w-0.5 h-2.5 bg-accent-cyan rounded animate-bounce [animation-delay:0.2s]" />
-														<span className="w-0.5 h-2 bg-accent-cyan rounded animate-bounce [animation-delay:0.3s]" />
-														<span className="w-0.5 h-1 bg-accent-cyan rounded animate-bounce [animation-delay:0.4s]" />
-													</span>
-												)}
-											</span>
-											<span className="text-[10px] text-zinc-500 font-mono">
-												{loadingAudio
-													? locale === "ar"
-														? "جاري توليد الصوت الطبيعي..."
-														: "Generating natural audio..."
-													: isPlayingPodcast
+									{/* Sleek, full-featured audio player interface */}
+									<div className="flex flex-col gap-2.5 p-4 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-lg shrink-0">
+										<div className="flex items-center justify-between">
+											<div className="flex flex-col">
+												<span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+													🎙️ {t.audioOverviewDiscussion}
+													{isPlayingPodcast && (
+														<span className="flex items-center gap-0.5 h-2.5">
+															<span className="w-0.5 h-1.5 bg-accent-cyan rounded animate-bounce [animation-delay:0.1s]" />
+															<span className="w-0.5 h-2.5 bg-accent-cyan rounded animate-bounce [animation-delay:0.2s]" />
+															<span className="w-0.5 h-2 bg-accent-cyan rounded animate-bounce [animation-delay:0.3s]" />
+														</span>
+													)}
+												</span>
+												<span className="text-[10px] text-zinc-500 font-mono mt-0.5">
+													{loadingAudio
 														? locale === "ar"
-															? "جاري تشغيل الصوت الطبيعي"
-															: "Playing natural Gemini voiceover"
-														: podcastAudioUrl
+															? "جاري توليد الصوت الطبيعي..."
+															: "Generating natural audio..."
+														: isPlayingPodcast
 															? locale === "ar"
-																? "الصوت جاهز للتشغيل"
-																: "Audio generated & ready"
-															: t.audioPlayerReady}
-											</span>
+																? "جاري تشغيل الصوت الطبيعي"
+																: "Playing natural Gemini voiceover"
+															: podcastAudioUrl
+																? locale === "ar"
+																	? "الصوت جاهز للتشغيل"
+																	: "Audio generated & ready"
+																: t.audioPlayerReady}
+												</span>
+											</div>
 										</div>
-										<div className="flex items-center gap-2">
-											<button
-												type="button"
-												onClick={() => {
-													setIsMuted(!isMuted);
-													if (audioRef.current) {
-														audioRef.current.muted = !isMuted;
-													}
-												}}
-												className="p-2 rounded bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700/80 transition text-zinc-650 dark:text-zinc-300"
-											>
-												{isMuted ? (
-													<VolumeX className="w-4 h-4" />
-												) : (
-													<Volume2 className="w-4 h-4" />
+
+										{/* Progress Slider */}
+										{podcastAudioUrl && (
+											<div className="flex items-center gap-3 mt-1.5">
+												<span className="text-[9px] font-mono text-zinc-500 w-8 text-right select-none">
+													{formatTime(Math.floor(currentTime))}
+												</span>
+												<input
+													type="range"
+													min={0}
+													max={duration || 100}
+													value={currentTime}
+													onChange={handleAudioSeek}
+													className="flex-1 h-1 bg-zinc-300 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-accent-cyan focus:outline-none"
+												/>
+												<span className="text-[9px] font-mono text-zinc-500 w-8 select-none">
+													{formatTime(Math.floor(duration))}
+												</span>
+											</div>
+										)}
+
+										{/* Controls Row */}
+										<div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-200/50 dark:border-zinc-850/40">
+											<div className="flex items-center gap-2">
+												<button
+													type="button"
+													onClick={() => {
+														setIsMuted(!isMuted);
+														if (audioRef.current) {
+															audioRef.current.muted = !isMuted;
+														}
+													}}
+													className="p-2 rounded bg-zinc-250 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700/80 transition text-zinc-650 dark:text-zinc-300"
+													title={isMuted ? "Unmute" : "Mute"}
+												>
+													{isMuted ? (
+														<VolumeX className="w-4 h-4" />
+													) : (
+														<Volume2 className="w-4 h-4" />
+													)}
+												</button>
+
+												{podcastAudioUrl && (
+													<button
+														type="button"
+														onClick={downloadPodcastAudio}
+														className="p-2 rounded bg-zinc-250 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700/80 transition text-zinc-650 dark:text-zinc-300"
+														title="Download Audio"
+													>
+														<Download className="w-4 h-4" />
+													</button>
 												)}
-											</button>
+											</div>
+
 											<button
 												type="button"
 												onClick={handlePlayPodcastAudio}
@@ -695,8 +1115,9 @@ export default function StudyStudio({
 									</div>
 
 									{audioError && (
-										<div className="p-3 rounded-lg border border-red-500/20 bg-red-950/15 text-red-400 text-xs font-semibold animate-fade-in shadow-[0_0_12px_rgba(239,68,68,0.1)]">
-											{audioError}
+										<div className="p-3 rounded-lg border border-red-500/20 bg-red-950/15 text-red-400 text-xs font-semibold animate-fade-in shadow-[0_0_12px_rgba(239,68,68,0.1)] flex items-start gap-2">
+											<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+											<span>{audioError}</span>
 										</div>
 									)}
 
@@ -747,6 +1168,12 @@ export default function StudyStudio({
 									<span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">
 										{t.noMindmap}
 									</span>
+									{mindmapError && (
+										<div className="p-3 rounded-lg border border-red-500/20 bg-red-950/15 text-red-400 text-xs font-semibold animate-fade-in shadow-[0_0_12px_rgba(239,68,68,0.15)] mb-4 flex items-start gap-2 max-w-sm text-start">
+											<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+											<span>{mindmapError}</span>
+										</div>
+									)}
 									<button
 										type="button"
 										onClick={generateMindmap}
@@ -772,14 +1199,25 @@ export default function StudyStudio({
 										<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
 											{t.conceptMapTab}
 										</span>
-										<button
-											type="button"
-											onClick={() => setIsFullscreenMindmap(true)}
-											className="px-2 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold transition flex items-center gap-1"
-										>
-											<Network className="w-3 h-3" />
-											{t.fullscreenGraph}
-										</button>
+										<div className="flex items-center gap-1.5">
+											<button
+												type="button"
+												onClick={downloadMindmapSvg}
+												className="px-2 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold transition flex items-center gap-1"
+												title="Download SVG Map"
+											>
+												<Download className="w-3 h-3" />
+												SVG
+											</button>
+											<button
+												type="button"
+												onClick={() => setIsFullscreenMindmap(true)}
+												className="px-2 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold transition flex items-center gap-1"
+											>
+												<Network className="w-3 h-3" />
+												{t.fullscreenGraph}
+											</button>
+										</div>
 									</div>
 
 									<div className="flex-1 overflow-y-auto flex flex-col gap-4 pr-1 relative ps-6 scrollbar-thin">
@@ -871,9 +1309,22 @@ export default function StudyStudio({
 
 							{notes && !loadingNotes && (
 								<div className="flex-1 flex flex-col min-h-0 relative animate-fade-in">
-									<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold border-b border-zinc-800/60 pb-1.5 mb-2 block shrink-0">
-										{t.notesTab}
-									</span>
+									<div className="flex items-center justify-between border-b border-zinc-800/60 pb-1.5 mb-2 shrink-0">
+										<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
+											{t.notesTab}
+										</span>
+										<div className="flex items-center gap-1.5">
+											<button
+												type="button"
+												onClick={downloadNotesAsImage}
+												className="px-2 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold transition flex items-center gap-1"
+												title="Download Calligraphy Notes as PNG"
+											>
+												<Download className="w-3 h-3" />
+												PNG Image
+											</button>
+										</div>
+									</div>
 									<div className="flex-1 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800/40 ruled-paper shadow-inner scrollbar-thin">
 										<div
 											className="py-4 select-text"

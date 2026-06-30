@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	AlertCircle,
 	Eye,
 	EyeOff,
 	Key,
@@ -82,6 +83,18 @@ export default function DashboardClient({ locale }: { locale: string }) {
 	const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
 	const [unlockPassphrase, setUnlockPassphrase] = useState("");
 	const [unlockError, setUnlockError] = useState("");
+	const [toastMessage, setToastMessage] = useState<{
+		text: string;
+		type: "success" | "error" | "info";
+	} | null>(null);
+
+	const showToast = (
+		text: string,
+		type: "success" | "error" | "info" = "success",
+	) => {
+		setToastMessage({ text, type });
+		setTimeout(() => setToastMessage(null), 3000);
+	};
 
 	useEffect(() => {
 		const saved = localStorage.getItem("tuberag_encrypted_gemini_key");
@@ -110,14 +123,18 @@ export default function DashboardClient({ locale }: { locale: string }) {
 			setIsSettingsOpen(false);
 			setTempApiKey("");
 			setPassphrase("");
-			alert(
+			showToast(
 				locale === "ar"
 					? "تم تشفير وحفظ مفتاحك بنجاح!"
 					: "Gemini API key encrypted and saved successfully!",
+				"success",
 			);
 		} catch (err) {
 			console.error(err);
-			alert(locale === "ar" ? "فشل تشفير المفتاح." : "Error encrypting key.");
+			showToast(
+				locale === "ar" ? "فشل تشفير المفتاح." : "Error encrypting key.",
+				"error",
+			);
 		}
 	};
 
@@ -132,6 +149,12 @@ export default function DashboardClient({ locale }: { locale: string }) {
 			setGeminiApiKey(decrypted);
 			setIsUnlockModalOpen(false);
 			setUnlockPassphrase("");
+			showToast(
+				locale === "ar"
+					? "تم فك تشفير المفتاح بنجاح!"
+					: "Key unlocked successfully!",
+				"success",
+			);
 		} catch (_err) {
 			setUnlockError(
 				locale === "ar"
@@ -147,10 +170,11 @@ export default function DashboardClient({ locale }: { locale: string }) {
 		setGeminiApiKey("");
 		setHasSavedKey(false);
 		setIsSettingsOpen(false);
-		alert(
+		showToast(
 			locale === "ar"
 				? "تم مسح مفتاح API من متصفحك."
 				: "Custom API key cleared from browser storage.",
+			"info",
 		);
 	};
 
@@ -307,6 +331,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 				isOpen={isLeftOpen}
 				onToggleOpen={() => setIsLeftOpen(!isLeftOpen)}
 				locale={locale}
+				onShowToast={showToast}
 			/>
 
 			{/* Main Core Viewport Split Grid */}
@@ -470,6 +495,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 						locale={locale}
 						onApiKeyExpired={() => setIsSettingsOpen(true)}
 						width={rightSplitWidth}
+						onShowToast={showToast}
 					/>
 				</div>
 			</div>
@@ -617,10 +643,11 @@ export default function DashboardClient({ locale }: { locale: string }) {
 								type="button"
 								onClick={() => {
 									setIsUnlockModalOpen(false);
-									alert(
+									showToast(
 										locale === "ar"
 											? "المتابعة باستخدام إعدادات مفتاح الخادم الافتراضي."
 											: "Proceeding using default server API key settings.",
+										"info",
 									);
 								}}
 								className="text-xs text-zinc-500 hover:text-zinc-400 mt-1 transition"
@@ -631,6 +658,20 @@ export default function DashboardClient({ locale }: { locale: string }) {
 							</button>
 						</form>
 					</div>
+				</div>
+			)}
+			{toastMessage && (
+				<div
+					className={`fixed bottom-6 right-6 z-[100] px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-slide-up ${
+						toastMessage.type === "success"
+							? "bg-green-950/20 border-green-500/30 text-green-400"
+							: toastMessage.type === "error"
+								? "bg-red-950/20 border-red-500/30 text-red-400"
+								: "bg-cyan-950/20 border-cyan-500/30 text-cyan-400"
+					}`}
+				>
+					<AlertCircle className="w-4 h-4 shrink-0" />
+					<span>{toastMessage.text}</span>
 				</div>
 			)}
 		</main>
