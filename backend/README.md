@@ -46,7 +46,23 @@ QSTASH_NEXT_SIGNING_KEY=your-signing-key
 
 # Gemini API Key (Gemini 2.5 Flash / Embeddings)
 GEMINI_API_KEY=your-gemini-key
+
+# Supadata API Key (Platform fallback for reliable transcript extraction)
+# SUPADATA_API_KEY=your-supadata-api-key
+
+# Optional YouTube Proxy (Residential / Scraper proxy to bypass blocks)
+# YOUTUBE_PROXY=http://user:pass@proxy.example.com:8080
 ```
+
+---
+
+## The Ingestion Pipeline & Fallbacks
+
+To bypass YouTube's aggressive IP blocks in serverless cloud environments (like FastAPI Cloud), TubeRAG implements a **three-tiered ingestion strategy** for transcription:
+
+1. **Tier 1 (Native Scraper):** Tries to fetch transcripts directly from YouTube for free. Supports configuring `YOUTUBE_PROXY` to route requests through residential proxies.
+2. **Tier 2 (Supadata API Fallback):** If Tier 1 fails and `SUPADATA_API_KEY` is configured, it queries the Supadata API to scrape the transcript.
+3. **Tier 3 (Local Audio Extraction):** If both fail, it fallback to extracting 10-minute audio chunks using `yt-dlp` (respecting `YOUTUBE_PROXY` if set) and transcribing them via the Gemini Multimodal API.
 
 ---
 

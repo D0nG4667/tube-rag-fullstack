@@ -42,6 +42,8 @@ The codebase is organized as a monorepo containing two distinct root packages:
    * Alternates speaker voices in a dynamic Podcast view utilizing `gemini-3.1-flash-tts-preview` script synthesis with automatic fallbacks.
    * Connects concepts dynamically using SVG bezier lines in an interactive Mindmap. Clicking nodes seeks the video player instantly to the timestamp.
 7. ** Strategic 3-Year Roadmap:** Detailed strategic phases timeline viewable at `/[locale]/roadmap`, supporting bilingual Arabic/English translations, theme-aware Dark/Light toggling, and support modals.
+8. **Three-Tier Ingestion & Manual Fallbacks:** Automatically routes video transcription through a three-stage fallback pipeline (Native Scraper $\rightarrow$ Supadata API $\rightarrow$ Whisper segment extraction via Gemini), with support for direct manual transcript uploads that automatically progress to frame/slide extraction steps.
+
 
 ---
 

@@ -58,6 +58,57 @@ export default function ControlDrawer({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [videoToDelete, setVideoToDelete] = useState<VideoNode | null>(null);
 
+	const [manualPasteVideo, setManualPasteVideo] = useState<VideoNode | null>(
+		null,
+	);
+	const [transcriptInput, setTranscriptInput] = useState("");
+	const [isSubmittingManual, setIsSubmittingManual] = useState(false);
+	const [manualError, setManualError] = useState("");
+
+	const handleManualSubmit = async () => {
+		if (!manualPasteVideo || !transcriptInput.trim()) return;
+
+		setIsSubmittingManual(true);
+		setManualError("");
+
+		try {
+			const response = await fetch(
+				`${process.env.NEXT_PUBLIC_API_URL}/api/v1/ingest/manual`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						...(geminiApiKey ? { "X-Gemini-API-Key": geminiApiKey } : {}),
+					},
+					body: JSON.stringify({
+						video_id: manualPasteVideo.id,
+						transcript_text: transcriptInput,
+					}),
+				},
+			);
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.detail || "Failed to submit transcript");
+			}
+
+			setManualPasteVideo(null);
+			setTranscriptInput("");
+			onIngestSuccess();
+			onShowToast?.(
+				isRtl
+					? "تم إدخال النص وتفعيل المتجهات بنجاح!"
+					: "Transcript submitted and embedded successfully!",
+				"success",
+			);
+		} catch (err) {
+			const error = err as Error;
+			setManualError(error.message || "Submission error");
+		} finally {
+			setIsSubmittingManual(false);
+		}
+	};
+
 	const handleIngest = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!urlInput.trim()) return;
@@ -296,6 +347,21 @@ export default function ControlDrawer({
 													</span>
 												</div>
 											</div>
+											{vid.status === "failed" && (
+												<button
+													type="button"
+													onClick={(e) => {
+														e.stopPropagation();
+														setManualPasteVideo(vid);
+													}}
+													className="mt-2 text-[10px] w-full py-1.5 rounded bg-rose-500/10 dark:bg-rose-500/20 border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-accent-cyan hover:text-white dark:hover:bg-accent-cyan dark:hover:text-white hover:border-accent-cyan transition flex items-center justify-center font-medium gap-1"
+												>
+													<Plus className="w-3 h-3" />
+													<span>
+														{isRtl ? "إدخال نص يدوي" : "Paste Transcript"}
+													</span>
+												</button>
+											)}
 										</div>
 									);
 								})}
@@ -379,6 +445,144 @@ export default function ControlDrawer({
 									className="flex-1 py-2 text-sm rounded-lg font-semibold bg-red-600 hover:bg-red-700 text-white transition"
 								>
 									{isRtl ? "حذف" : "Delete"}
+								</button>
+							</div>
+						</>
+					)}
+				</DialogContent>
+			</Dialog>
+
+			{/* Custom Manual Ingestion Modal */}
+			<Dialog
+				open={manualPasteVideo !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setManualPasteVideo(null);
+						setTranscriptInput("");
+						setManualError("");
+					}
+				}}
+			>
+				<DialogContent
+					showCloseButton={false}
+					className="max-w-xl p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-2xl flex flex-col gap-4 text-start"
+				>
+					{manualPasteVideo && (
+						<>
+							<div className="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-zinc-800">
+								<div className="flex items-center gap-2 text-accent-cyan font-sans">
+									<Plus className="w-5 h-5 animate-pulse" />
+									<h2 className="text-md font-semibold text-zinc-800 dark:text-zinc-100">
+										{isRtl
+											? "إدخال نص تفريغ يدوي"
+											: "Manual Transcript Ingestion"}
+									</h2>
+								</div>
+								<button
+									type="button"
+									onClick={() => {
+										setManualPasteVideo(null);
+										setTranscriptInput("");
+										setManualError("");
+									}}
+									className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition"
+								>
+									<X className="w-4 h-4" />
+								</button>
+							</div>
+
+							<div className="text-xs text-zinc-650 dark:text-zinc-400 leading-relaxed flex flex-col gap-2 font-sans">
+								<p>
+									{isRtl
+										? "واجهت خوادمنا صعوبة في جلب تفريغ الفيديو تلقائيًا من YouTube. يمكنك المتابعة بنسخ تفريغ الفيديو يدويًا من YouTube ولصقه أدناه:"
+										: "Our servers were rate-limited or blocked by YouTube. You can bypass this by copying and pasting the transcript manually:"}
+								</p>
+								<div className="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-lg border border-zinc-200 dark:border-zinc-850 flex flex-col gap-1">
+									<span className="font-semibold text-zinc-750 dark:text-zinc-300">
+										{isRtl ? "كيفية الحصول على النص:" : "Instructions:"}
+									</span>
+									<ul className="list-disc list-inside space-y-1 mt-1 text-[11px] text-zinc-650 dark:text-zinc-450">
+										<li>
+											<a
+												href={`https://www.youtube.com/watch?v=${manualPasteVideo.youtube_id}`}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-accent-cyan hover:underline font-semibold"
+											>
+												{isRtl
+													? "افتح الفيديو على YouTube ↗"
+													: "Open video on YouTube ↗"}
+											</a>
+										</li>
+										<li>
+											{isRtl
+												? "من تفاصيل الفيديو، انقر على 'عرض التفريغ' (Show Transcript)."
+												: "In the description section, click 'Show transcript'."}
+										</li>
+										<li>
+											{isRtl
+												? "انسخ النص بأكمله (سواء كان يحتوي على طوابع زمنية أم لا) والصقه أدناه."
+												: "Copy the entire text (both with/without timestamps) and paste it below."}
+										</li>
+									</ul>
+								</div>
+							</div>
+
+							<div className="flex flex-col gap-2">
+								<label
+									htmlFor="transcript-paste"
+									className="text-xs text-zinc-400 font-medium"
+								>
+									{isRtl ? "نص التفريغ الملصق:" : "Pasted Transcript Text:"}
+								</label>
+								<textarea
+									id="transcript-paste"
+									rows={8}
+									value={transcriptInput}
+									onChange={(e) => setTranscriptInput(e.target.value)}
+									placeholder={
+										isRtl
+											? "0:00\nمرحباً بكم في هذا الفيديو...\n0:05\nاليوم سنتحدث عن..."
+											: "0:00\nNever gonna give you up\n0:02\nNever gonna let you down"
+									}
+									className="w-full px-3 py-2 text-xs rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:border-accent-cyan text-zinc-800 dark:text-zinc-200 placeholder-zinc-500 font-mono leading-normal resize-none"
+									disabled={isSubmittingManual}
+								/>
+							</div>
+
+							{manualError && (
+								<p className="text-xs text-red-400 mt-1">{manualError}</p>
+							)}
+
+							<div className="flex gap-3 mt-2">
+								<button
+									type="button"
+									onClick={() => {
+										setManualPasteVideo(null);
+										setTranscriptInput("");
+										setManualError("");
+									}}
+									className="flex-grow py-2 text-sm rounded-lg font-semibold border border-zinc-350 dark:border-zinc-850 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+									disabled={isSubmittingManual}
+								>
+									{isRtl ? "إلغاء" : "Cancel"}
+								</button>
+								<button
+									type="button"
+									onClick={handleManualSubmit}
+									className="flex-grow py-2 text-sm rounded-lg font-semibold bg-accent-cyan hover:bg-accent-cyan/85 text-white transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+									disabled={isSubmittingManual || !transcriptInput.trim()}
+								>
+									{isSubmittingManual ? (
+										<>
+											<Loader2 className="w-4 h-4 animate-spin" />
+											<span>{isRtl ? "جاري الإدخال..." : "Ingesting..."}</span>
+										</>
+									) : (
+										<span>
+											{isRtl ? "حفظ النص وتفعيل المتجهات" : "Submit & Embed"}
+										</span>
+									)}
 								</button>
 							</div>
 						</>

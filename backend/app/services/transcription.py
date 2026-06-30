@@ -1,11 +1,15 @@
 import random
+import re
 import subprocess
 import sys
+from typing import Any
 
 from google import genai
 from google.genai import types
 
 from app.core.config import settings
+
+TIMESTAMP_REGEX = re.compile(r"\[?(\d{1,2}:)?(\d{1,2}):(\d{2})\]?")
 
 
 def get_embedding(text: str, api_key: str | None = None) -> list[float]:
@@ -249,3 +253,113 @@ def fetch_transcript_from_supadata(video_id: str, api_key: str) -> list[dict]:
             }
         )
     return items
+
+
+def parse_time_to_seconds(hours: str, minutes: str, seconds: str) -> float:
+    """Safely converts regex timestamp string matches to float seconds."""
+    h = int(hours.replace(":", "")) if hours else 0
+    m = int(minutes)
+    s = int(seconds)
+    return float(h * 3600 + m * 60 + s)
+
+
+def parse_manual_transcript(
+    text: str, duration: float | None = None
+) -> list[dict[str, Any]]:
+    """
+    Robust production parser for unstructured/pasted transcripts.
+    Handles interleaved timestamps, line-separated pairs, and clean
+    chunk distribution for downstream vector storage ingestion.
+    """
+    if not text or not text.strip():
+        return []
+
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    parsed_items: list[dict[str, Any]] = []
+
+    current_time: float | None = None
+    current_buffer: list[str] = []
+
+    # --- Phase 1: Robust State-Machine Extraction ---
+    for line in lines:
+        match = TIMESTAMP_REGEX.search(line)
+
+        if match:
+            # Commit the previous block before moving to the new timestamp
+            if current_time is not None and current_buffer:
+                parsed_items.append(
+                    {
+                        "text": " ".join(current_buffer).strip(),
+                        "start": current_time,
+                        "duration": 0.0,  # Will calculate in Phase 2
+                    }
+                )
+                current_buffer = []
+
+            # Extract timestamp metrics
+            current_time = parse_time_to_seconds(
+                match.group(1), match.group(2), match.group(3)
+            )
+
+            # Extract any trailing textual content sitting on the exact same line
+            clean_text = TIMESTAMP_REGEX.sub("", line).strip()
+            if clean_text:
+                current_buffer.append(clean_text)
+        else:
+            # Line is pure text content, append to existing open buffer
+            if current_time is not None:
+                current_buffer.append(line)
+
+    # Commit any remaining dangling buffer data
+    if current_time is not None and current_buffer:
+        parsed_items.append(
+            {
+                "text": " ".join(current_buffer).strip(),
+                "start": current_time,
+                "duration": 0.0,
+            }
+        )
+
+    # --- Phase 2: Dynamic Edge-Bridging & Calculations ---
+    if parsed_items:
+        for idx in range(len(parsed_items) - 1):
+            delta = parsed_items[idx + 1]["start"] - parsed_items[idx]["start"]
+            # Enforce a sane maximum window per segment (e.g., max 60s) to keep RAG slices tight
+            parsed_items[idx]["duration"] = min(max(1.0, delta), 60.0)
+
+        # Set a logical fallback for the absolute final segment
+        parsed_items[-1]["duration"] = 5.0
+        return parsed_items
+
+    # --- Phase 3: Semantic Fallback Routing (Plain Text) ---
+    # Chunk by sentence boundaries, not hard character limits
+    sentences = re.split(r"(?<=[.!?])\s+", text.replace("\n", " "))
+    chunks: list[str] = []
+    current_chunk: list[str] = []
+    current_char_count = 0
+    target_chunk_chars = 700
+
+    for sentence in sentences:
+        if current_char_count + len(sentence) > target_chunk_chars and current_chunk:
+            chunks.append(" ".join(current_chunk))
+            current_chunk = [sentence]
+            current_char_count = len(sentence)
+        else:
+            current_chunk.append(sentence)
+            current_char_count += len(sentence) + 1
+
+    if current_chunk:
+        chunks.append(" ".join(current_chunk))
+
+    # Evenly distribute chunks relative to video duration metrics
+    total_duration = duration if duration and duration > 0 else 300.0
+    duration_per_chunk = total_duration / max(len(chunks), 1)
+
+    return [
+        {
+            "text": chunk_content,
+            "start": round(idx * duration_per_chunk, 2),
+            "duration": round(duration_per_chunk, 2),
+        }
+        for idx, chunk_content in enumerate(chunks)
+    ]

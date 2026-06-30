@@ -13,6 +13,7 @@ from youtube_transcript_api.proxies import GenericProxyConfig
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_supabase
+from app.core.helpers import dispatch_ingest_task, logger, resolve_backend_url
 from app.services.frame_extractor import (
     analyze_frame_with_gemini,
     calculate_ssim,
@@ -214,71 +215,33 @@ def process_video_task(
                     {"status": "transcribing", "current_offset": offset + 600.0}
                 ).eq("id", video_id).execute()
 
-                if (
-                    settings.ENVIRONMENT == "local"
-                    and "pytest" not in sys.modules
-                    and background_tasks
-                ):
-                    background_tasks.add_task(
-                        process_video_task,
-                        video_id,
-                        "transcribe",
-                        offset + 600.0,
-                        db,
-                        settings,
-                        background_tasks,
-                        backend_url,
-                        gemini_api_key,
-                    )
-                elif settings.QSTASH_TOKEN:
-                    from qstash import QStash
-
-                    q_client = QStash(token=settings.QSTASH_TOKEN)
-                    q_client.message.publish_json(
-                        url=f"{base_url}/api/v1/internal/process-video",
-                        body={
-                            "video_id": video_id,
-                            "step": "transcribe",
-                            "offset": offset + 600.0,
-                            "gemini_api_key": gemini_api_key,
-                        },
-                    )
+                dispatch_ingest_task(
+                    video_id=video_id,
+                    step="transcribe",
+                    offset=offset + 600.0,
+                    db=db,
+                    settings=settings,
+                    background_tasks=background_tasks,
+                    backend_url=base_url,
+                    gemini_api_key=gemini_api_key,
+                )
             else:
                 db.table("videos").update(
                     {"status": "processing_frames", "current_offset": 0.0}
                 ).eq("id", video_id).execute()
 
-                if (
-                    settings.ENVIRONMENT == "local"
-                    and "pytest" not in sys.modules
-                    and background_tasks
-                ):
-                    background_tasks.add_task(
-                        process_video_task,
-                        video_id,
-                        "extract_frames",
-                        0.0,
-                        db,
-                        settings,
-                        background_tasks,
-                        backend_url,
-                        gemini_api_key,
-                    )
-                elif settings.QSTASH_TOKEN:
-                    from qstash import QStash
-
-                    q_client = QStash(token=settings.QSTASH_TOKEN)
-                    q_client.message.publish_json(
-                        url=f"{base_url}/api/v1/internal/process-video",
-                        body={
-                            "video_id": video_id,
-                            "step": "extract_frames",
-                            "offset": 0.0,
-                            "gemini_api_key": gemini_api_key,
-                        },
-                    )
+                dispatch_ingest_task(
+                    video_id=video_id,
+                    step="extract_frames",
+                    offset=0.0,
+                    db=db,
+                    settings=settings,
+                    background_tasks=background_tasks,
+                    backend_url=base_url,
+                    gemini_api_key=gemini_api_key,
+                )
         except Exception as e_fallback:
-            print(f"Fallback transcription failed: {e_fallback}")
+            logger.error(f"Fallback transcription failed: {e_fallback}", exc_info=True)
             db.table("videos").update({"status": "failed"}).eq("id", video_id).execute()
             raise e_fallback
 
@@ -287,66 +250,101 @@ def process_video_task(
             tempfile.gettempdir(), f"video_{video_id}_{offset}.mp4"
         )
         try:
-            download_video_segment(yt_url, offset, offset + 600.0, tmp_video)
-            frames = extract_frames_from_video(tmp_video, interval_sec=10.0)
+            try:
+                download_video_segment(
+                    yt_url,
+                    offset,
+                    offset + 600.0,
+                    tmp_video,
+                    youtube_proxy=settings.YOUTUBE_PROXY,
+                )
+                frames = extract_frames_from_video(tmp_video, interval_sec=10.0)
 
-            prev_img = None
-            for timestamp, frame_bytes in frames:
-                # Decode frame bytes to CV image for SSIM calculation
-                nparr = np.frombuffer(frame_bytes, np.uint8)
-                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                if img is None:
-                    continue
-
-                if prev_img is not None:
-                    sim = calculate_ssim(img, prev_img)
-                    if sim >= 0.90:
-                        # Skip duplicate frame
+                prev_img = None
+                for timestamp, frame_bytes in frames:
+                    # Decode frame bytes to CV image for SSIM calculation
+                    nparr = np.frombuffer(frame_bytes, np.uint8)
+                    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    if img is None:
                         continue
 
-                # Run vision model and store
-                slide_analysis = analyze_frame_with_gemini(
-                    frame_bytes, api_key=gemini_api_key
+                    if prev_img is not None:
+                        sim = calculate_ssim(img, prev_img)
+                        if sim >= 0.90:
+                            # Skip duplicate frame
+                            continue
+
+                    # Run vision model and store
+                    slide_analysis = analyze_frame_with_gemini(
+                        frame_bytes, api_key=gemini_api_key
+                    )
+                    if not slide_analysis or not slide_analysis.is_slide:
+                        continue
+
+                    storage_path = f"{video_id}/{offset + timestamp}.webp"
+                    storage_url = f"https://mock.storage/{storage_path}"
+
+                    # Upload to Supabase Storage if configured and not in test mode
+                    if not ("pytest" in sys.modules or not settings.SUPABASE_URL):
+                        try:
+                            db.storage.from_("video-frames").upload(
+                                path=storage_path,
+                                file=frame_bytes,
+                                file_options={"content-type": "image/webp"},
+                            )
+                            storage_url = db.storage.from_(
+                                "video-frames"
+                            ).get_public_url(storage_path)
+                        except Exception as e:
+                            logger.error(
+                                f"Failed to upload to storage: {e}", exc_info=True
+                            )
+
+                    db.table("video_chunks").insert(
+                        {
+                            "video_id": video_id,
+                            "content": f"Slide: {slide_analysis.slide_title or ''}\nOCR Text: {slide_analysis.ocr_text}\nVisual Description: {slide_analysis.visual_description}",
+                            "embedding": get_embedding(
+                                slide_analysis.ocr_text, api_key=gemini_api_key
+                            ),
+                            "start_time": offset + timestamp,
+                            "end_time": offset + timestamp + 10.0,
+                            "chunk_type": "visual_frame",
+                            "image_url": storage_url,
+                            "metadata": {
+                                "slide_title": slide_analysis.slide_title,
+                                "code_snippets": slide_analysis.code_snippets,
+                            },
+                        }
+                    ).execute()
+
+                    prev_img = img
+            except Exception as e:
+                # If frame extraction fails, check if we already have transcript chunks.
+                # If so, we can proceed to completed so the RAG workspace is still active!
+                # Otherwise, we mark the video as failed.
+                logger.error(f"Frame extraction segment failed: {e}", exc_info=True)
+                chunks_res = (
+                    db.table("video_chunks")
+                    .select("id")
+                    .eq("video_id", video_id)
+                    .eq("chunk_type", "transcript")
+                    .execute()
                 )
-
-                # Default storage path and URL
-                storage_path = f"frames/{video_id}/{offset + timestamp}.webp"
-                storage_url = f"https://mock.storage/{storage_path}"
-
-                # Upload to Supabase Storage if configured and not in test mode
-                if not ("pytest" in sys.modules or not settings.SUPABASE_URL):
-                    try:
-                        db.storage.from_("video-frames").upload(
-                            path=storage_path,
-                            file=frame_bytes,
-                            file_options={"content-type": "image/webp"},
-                        )
-                        storage_url = db.storage.from_("video-frames").get_public_url(
-                            storage_path
-                        )
-                    except Exception as e:
-                        print(f"Failed to upload to storage: {e}")
-
-                db.table("video_chunks").insert(
-                    {
-                        "video_id": video_id,
-                        "content": f"Slide: {slide_analysis.slide_title or ''}\nOCR Text: {slide_analysis.ocr_text}\nVisual Description: {slide_analysis.visual_description}",
-                        "embedding": get_embedding(
-                            slide_analysis.ocr_text, api_key=gemini_api_key
-                        ),
-                        "start_time": offset + timestamp,
-                        "end_time": offset + timestamp + 10.0,
-                        "chunk_type": "visual_frame",
-                        "image_url": storage_url,
-                        "metadata": {
-                            "slide_title": slide_analysis.slide_title,
-                            "code_snippets": slide_analysis.code_snippets,
-                        },
-                    }
-                ).execute()
-
-                prev_img = img
-
+                if chunks_res.data:
+                    logger.warning(
+                        "Transcript chunks exist. Completing video without further visual frames."
+                    )
+                    duration = video.get("duration") or 3600.0
+                    db.table("videos").update(
+                        {"status": "completed", "current_offset": duration}
+                    ).eq("id", video_id).execute()
+                    return {"status": "ok"}
+                else:
+                    db.table("videos").update({"status": "failed"}).eq(
+                        "id", video_id
+                    ).execute()
+                    raise e
         finally:
             if os.path.exists(tmp_video):
                 try:
@@ -361,35 +359,16 @@ def process_video_task(
                 {"status": "processing_frames", "current_offset": offset + 600.0}
             ).eq("id", video_id).execute()
 
-            if (
-                settings.ENVIRONMENT == "local"
-                and "pytest" not in sys.modules
-                and background_tasks
-            ):
-                background_tasks.add_task(
-                    process_video_task,
-                    video_id,
-                    "extract_frames",
-                    offset + 600.0,
-                    db,
-                    settings,
-                    background_tasks,
-                    backend_url,
-                    gemini_api_key,
-                )
-            elif settings.QSTASH_TOKEN:
-                from qstash import QStash
-
-                q_client = QStash(token=settings.QSTASH_TOKEN)
-                q_client.message.publish_json(
-                    url=f"{base_url}/api/v1/internal/process-video",
-                    body={
-                        "video_id": video_id,
-                        "step": "extract_frames",
-                        "offset": offset + 600.0,
-                        "gemini_api_key": gemini_api_key,
-                    },
-                )
+            dispatch_ingest_task(
+                video_id=video_id,
+                step="extract_frames",
+                offset=offset + 600.0,
+                db=db,
+                settings=settings,
+                background_tasks=background_tasks,
+                backend_url=base_url,
+                gemini_api_key=gemini_api_key,
+            )
         else:
             db.table("videos").update(
                 {"status": "completed", "current_offset": duration}
@@ -413,26 +392,7 @@ async def process_video_webhook(
     gemini_api_key = req_data.get("gemini_api_key")
 
     # Ingest / webhook requests can infer backend_url
-    backend_url = settings.BACKEND_URL
-    if (
-        not backend_url
-        or "localhost" in backend_url
-        or "127.0.0.1" in backend_url
-        or "::1" in backend_url
-    ):
-        forwarded_proto = request.headers.get("x-forwarded-proto", "http")
-        forwarded_host = (
-            request.headers.get("x-forwarded-host")
-            or request.headers.get("host")
-            or request.base_url.netloc
-        )
-        if forwarded_host:
-            backend_url = f"{forwarded_proto}://{forwarded_host}"
-        else:
-            backend_url = str(request.base_url).rstrip("/")
-
-    if backend_url:
-        backend_url = backend_url.rstrip("/")
+    backend_url = resolve_backend_url(request, settings)
 
     if db is None:
         raise HTTPException(status_code=500, detail="Database client is not configured")

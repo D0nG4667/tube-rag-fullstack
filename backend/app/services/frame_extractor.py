@@ -78,7 +78,13 @@ def analyze_frame_with_gemini(
     return SlideAnalysis.model_validate_json(response.text)
 
 
-def download_video_segment(url: str, start_sec: float, end_sec: float, out_path: str):
+def download_video_segment(
+    url: str,
+    start_sec: float,
+    end_sec: float,
+    out_path: str,
+    youtube_proxy: str | None = None,
+):
     """
     Downloads the lowest-quality video segment using yt-dlp to optimize bandwidth and time.
     """
@@ -104,6 +110,9 @@ def download_video_segment(url: str, start_sec: float, end_sec: float, out_path:
         out_path,
         url,
     ]
+    if youtube_proxy:
+        cmd.extend(["--proxy", youtube_proxy])
+
     try:
         subprocess.run(cmd, check=True)
     except (FileNotFoundError, subprocess.CalledProcessError) as e:
