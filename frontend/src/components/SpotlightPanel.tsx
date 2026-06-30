@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import type React from "react";
+import { useRef, useState } from "react";
 
 interface SpotlightPanelProps {
 	children: React.ReactNode;
@@ -25,6 +26,7 @@ export default function SpotlightPanel({
 	};
 
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: mouse tracker for radial background hover effects
 		<div
 			ref={divRef}
 			onMouseMove={handleMouseMove}

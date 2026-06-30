@@ -59,6 +59,7 @@ def process_video_task(
     settings: Settings,
     background_tasks: BackgroundTasks | None = None,
     backend_url: str | None = None,
+    gemini_api_key: str | None = None,
 ) -> dict:
     """
     Executes the video ingestion and processing task step-by-step.
@@ -79,7 +80,7 @@ def process_video_task(
 
             # Embed & store chunk-by-chunk
             for ch in chunks:
-                embedding = get_embedding(ch["content"])
+                embedding = get_embedding(ch["content"], api_key=gemini_api_key)
                 db.table("video_chunks").insert(
                     {
                         "video_id": video_id,
@@ -112,6 +113,7 @@ def process_video_task(
                     settings,
                     background_tasks,
                     backend_url,
+                    gemini_api_key,
                 )
             elif settings.QSTASH_TOKEN:
                 from qstash import QStash
@@ -123,6 +125,7 @@ def process_video_task(
                         "video_id": video_id,
                         "step": "extract_frames",
                         "offset": 0.0,
+                        "gemini_api_key": gemini_api_key,
                     },
                 )
 
@@ -138,10 +141,12 @@ def process_video_task(
             )
             try:
                 download_audio_segment(yt_url, offset, offset + 600.0, tmp_audio)
-                transcript_text = transcribe_audio_with_gemini(tmp_audio)
+                transcript_text = transcribe_audio_with_gemini(
+                    tmp_audio, api_key=gemini_api_key
+                )
 
                 # Embed and insert single chunk
-                embedding = get_embedding(transcript_text)
+                embedding = get_embedding(transcript_text, api_key=gemini_api_key)
                 db.table("video_chunks").insert(
                     {
                         "video_id": video_id,
@@ -183,6 +188,7 @@ def process_video_task(
                         settings,
                         background_tasks,
                         backend_url,
+                        gemini_api_key,
                     )
                 elif settings.QSTASH_TOKEN:
                     from qstash import QStash
@@ -194,6 +200,7 @@ def process_video_task(
                             "video_id": video_id,
                             "step": "transcribe",
                             "offset": offset + 600.0,
+                            "gemini_api_key": gemini_api_key,
                         },
                     )
             else:
@@ -215,6 +222,7 @@ def process_video_task(
                         settings,
                         background_tasks,
                         backend_url,
+                        gemini_api_key,
                     )
                 elif settings.QSTASH_TOKEN:
                     from qstash import QStash
@@ -226,6 +234,7 @@ def process_video_task(
                             "video_id": video_id,
                             "step": "extract_frames",
                             "offset": 0.0,
+                            "gemini_api_key": gemini_api_key,
                         },
                     )
 
@@ -252,7 +261,9 @@ def process_video_task(
                         continue
 
                 # Run vision model and store
-                slide_analysis = analyze_frame_with_gemini(frame_bytes)
+                slide_analysis = analyze_frame_with_gemini(
+                    frame_bytes, api_key=gemini_api_key
+                )
 
                 # Default storage path and URL
                 storage_path = f"frames/{video_id}/{offset + timestamp}.webp"
@@ -276,7 +287,9 @@ def process_video_task(
                     {
                         "video_id": video_id,
                         "content": f"Slide: {slide_analysis.slide_title or ''}\nOCR Text: {slide_analysis.ocr_text}\nVisual Description: {slide_analysis.visual_description}",
-                        "embedding": get_embedding(slide_analysis.ocr_text),
+                        "embedding": get_embedding(
+                            slide_analysis.ocr_text, api_key=gemini_api_key
+                        ),
                         "start_time": offset + timestamp,
                         "end_time": offset + timestamp + 10.0,
                         "chunk_type": "visual_frame",
@@ -318,6 +331,7 @@ def process_video_task(
                     settings,
                     background_tasks,
                     backend_url,
+                    gemini_api_key,
                 )
             elif settings.QSTASH_TOKEN:
                 from qstash import QStash
@@ -329,6 +343,7 @@ def process_video_task(
                         "video_id": video_id,
                         "step": "extract_frames",
                         "offset": offset + 600.0,
+                        "gemini_api_key": gemini_api_key,
                     },
                 )
         else:
@@ -351,12 +366,22 @@ async def process_video_webhook(
     video_id = req_data.get("video_id")
     step = req_data.get("step")
     offset = req_data.get("offset", 0.0)
+    gemini_api_key = req_data.get("gemini_api_key")
 
     # Ingest / webhook requests can infer backend_url
     backend_url = settings.BACKEND_URL
-    if not backend_url or "localhost" in backend_url or "127.0.0.1" in backend_url or "::1" in backend_url:
+    if (
+        not backend_url
+        or "localhost" in backend_url
+        or "127.0.0.1" in backend_url
+        or "::1" in backend_url
+    ):
         forwarded_proto = request.headers.get("x-forwarded-proto", "http")
-        forwarded_host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.base_url.netloc
+        forwarded_host = (
+            request.headers.get("x-forwarded-host")
+            or request.headers.get("host")
+            or request.base_url.netloc
+        )
         if forwarded_host:
             backend_url = f"{forwarded_proto}://{forwarded_host}"
         else:
@@ -374,6 +399,7 @@ async def process_video_webhook(
             settings=settings,
             background_tasks=background_tasks,
             backend_url=backend_url,
+            gemini_api_key=gemini_api_key,
         )
         return res
     except ValueError as e:

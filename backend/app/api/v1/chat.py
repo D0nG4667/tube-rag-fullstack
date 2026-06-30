@@ -54,9 +54,7 @@ def generate_hyde_paragraph(
     res = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=[HYDE_USER_TEMPLATE.format(query=query)],
-        config=types.GenerateContentConfig(
-            system_instruction=HYDE_SYSTEM_INSTRUCTION
-        ),
+        config=types.GenerateContentConfig(system_instruction=HYDE_SYSTEM_INSTRUCTION),
     )
     return res.text
 
@@ -82,14 +80,12 @@ def generate_rag_response(
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=[prompt],
-        config=types.GenerateContentConfig(
-            system_instruction=system_instruction
-        ),
+        config=types.GenerateContentConfig(system_instruction=system_instruction),
     )
     return response.text
 
 
-@router.post("/api/v1/chat")
+@router.post("/api/v1/chat/query")
 def run_chat_rag(
     req: ChatRequest,
     x_gemini_api_key: str | None = Header(None),
@@ -117,13 +113,22 @@ def run_chat_rag(
             ],
         }
 
-    # 1. Generate HyDE hypothetical paragraph
-    hyde_text = generate_hyde_paragraph(req.message, settings, api_key=x_gemini_api_key)
+    # 1. Generate HyDE hypothetical paragraph & Embed
+    try:
+        hyde_text = generate_hyde_paragraph(
+            req.message, settings, api_key=x_gemini_api_key
+        )
+        query_embedding = get_embedding(hyde_text, api_key=x_gemini_api_key)
+    except Exception as e:
+        error_str = str(e).upper()
+        if any(
+            keyword in error_str
+            for keyword in ["429", "RESOURCE_EXHAUSTED", "403", "API_KEY", "QUOTA"]
+        ):
+            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED")
+        raise HTTPException(status_code=500, detail=f"Chat initialization error: {e!s}")
 
-    # 2. Embed hypothetical paragraph
-    query_embedding = get_embedding(hyde_text, api_key=x_gemini_api_key)
-
-    # 3. Query Hybrid Search RRF function in Supabase
+    # 2. Query Hybrid Search RRF function in Supabase
     res = db.rpc(
         "hybrid_search",
         {
@@ -143,16 +148,25 @@ def run_chat_rag(
     # Format retrieved contexts in structured format
     formatted_context = format_chunks_for_prompt(res.data)
 
-    # 4. Generate grounded response with citations using unified template
+    # 3. Generate grounded response with citations using unified template
     rag_prompt = RAG_USER_TEMPLATE.format(
         formatted_context=formatted_context, query=req.message
     )
 
-    response_text = generate_rag_response(
-        prompt=rag_prompt,
-        system_instruction=RAG_SYSTEM_INSTRUCTION,
-        settings=settings,
-        api_key=x_gemini_api_key,
-    )
+    try:
+        response_text = generate_rag_response(
+            prompt=rag_prompt,
+            system_instruction=RAG_SYSTEM_INSTRUCTION,
+            settings=settings,
+            api_key=x_gemini_api_key,
+        )
+    except Exception as e:
+        error_str = str(e).upper()
+        if any(
+            keyword in error_str
+            for keyword in ["429", "RESOURCE_EXHAUSTED", "403", "API_KEY", "QUOTA"]
+        ):
+            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED")
+        raise HTTPException(status_code=500, detail=f"LLM generation error: {e!s}")
 
     return {"response": response_text, "sources": res.data}

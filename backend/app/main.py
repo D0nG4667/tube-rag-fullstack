@@ -6,10 +6,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.chat import router as chat_router
 from app.api.v1.ingest import router as ingest_router
+from app.api.v1.notebook import router as notebook_router
 from app.api.v1.webhook import router as webhook_router
-from app.core.database import verify_db_connection
+from app.core.database import (
+    verify_db_connection,
+    start_default_videos_ingestion,
+    close_db_connection,
+)
 
-logger = logging.getLogger("tuberag.main")
+logger = logging.getLogger("uvicorn.error")
 
 
 @asynccontextmanager
@@ -18,8 +23,12 @@ async def lifespan(app: FastAPI):
     db_ok = await verify_db_connection()
     if not db_ok:
         logger.warning("FastAPI startup: Database connection check failed.")
+    else:
+        start_default_videos_ingestion()
     yield
     # Cleanup handlers go here
+    logger.info("FastAPI shutdown: Cleaning up application lifecycle resources.")
+    close_db_connection()
 
 
 app = FastAPI(title="TubeRAG Backend", lifespan=lifespan)
@@ -36,3 +45,4 @@ app.add_middleware(
 app.include_router(ingest_router)
 app.include_router(webhook_router)
 app.include_router(chat_router)
+app.include_router(notebook_router)

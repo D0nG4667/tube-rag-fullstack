@@ -8,20 +8,21 @@ from google.genai import types
 from app.core.config import settings
 
 
-def get_embedding(text: str) -> list[float]:
+def get_embedding(text: str, api_key: str | None = None) -> list[float]:
     """
     Generates embedding vector of 768 dimensions using Gemini gemini-embedding-001.
     """
+    effective_key = api_key or settings.GEMINI_API_KEY
     if (
         "pytest" in sys.modules
-        or not settings.GEMINI_API_KEY
-        or settings.GEMINI_API_KEY == "your-gemini-api-key"
+        or not effective_key
+        or effective_key == "your-gemini-api-key"
     ):
         # Generate stable dummy embedding for testing
         random.seed(hash(text))
         return [random.uniform(-1.0, 1.0) for _ in range(768)]
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = genai.Client(api_key=effective_key)
     emb_res = client.models.embed_content(
         model="gemini-embedding-001",
         contents=text,
@@ -146,8 +147,13 @@ def download_audio_segment(url: str, start_sec: float, end_sec: float, out_path:
 
     start_str = f"{int(start_sec) // 3600:02d}:{int(start_sec) % 3600 // 60:02d}:{int(start_sec) % 60:02d}"
     end_str = f"{int(end_sec) // 3600:02d}:{int(end_sec) % 3600 // 60:02d}:{int(end_sec) % 60:02d}"
-    cmd = [
-        "yt-dlp",
+
+    import shutil
+
+    yt_executable = shutil.which("yt-dlp")
+    cmd_base = [yt_executable] if yt_executable else [sys.executable, "-m", "yt_dlp"]
+
+    cmd = cmd_base + [
         "-f",
         "ba*[ext=m4a]/ba",
         "--download-sections",
@@ -158,10 +164,10 @@ def download_audio_segment(url: str, start_sec: float, end_sec: float, out_path:
     ]
     try:
         subprocess.run(cmd, check=True)
-    except FileNotFoundError as e:
+    except (FileNotFoundError, subprocess.CalledProcessError) as e:
         if settings.ENVIRONMENT == "local":
             print(
-                "WARNING: yt-dlp was not found on PATH. Creating dummy audio segment for local development bypass."
+                f"WARNING: yt-dlp download failed ({e}). Creating dummy audio segment for local development bypass."
             )
             with open(out_path, "wb") as f:
                 f.write(b"MOCK AUDIO DATA")
@@ -171,18 +177,19 @@ def download_audio_segment(url: str, start_sec: float, end_sec: float, out_path:
         ) from e
 
 
-def transcribe_audio_with_gemini(audio_path: str) -> str:
+def transcribe_audio_with_gemini(audio_path: str, api_key: str | None = None) -> str:
     """
     Uploads audio file to Gemini and requests a transcript with timestamps.
     """
+    effective_key = api_key or settings.GEMINI_API_KEY
     if (
         "pytest" in sys.modules
-        or not settings.GEMINI_API_KEY
-        or settings.GEMINI_API_KEY == "your-gemini-api-key"
+        or not effective_key
+        or effective_key == "your-gemini-api-key"
     ):
         return "[00:10] This is a mock transcription segment for testing."
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = genai.Client(api_key=effective_key)
     file_ref = client.files.upload(file=audio_path)
     try:
         response = client.models.generate_content(

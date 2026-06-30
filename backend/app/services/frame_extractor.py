@@ -43,14 +43,17 @@ def calculate_ssim(img1: np.ndarray, img2: np.ndarray) -> float:
     return sim
 
 
-def analyze_frame_with_gemini(frame_bytes: bytes) -> SlideAnalysis:
+def analyze_frame_with_gemini(
+    frame_bytes: bytes, api_key: str | None = None
+) -> SlideAnalysis:
     """
     Analyzes frame image bytes using Gemini 2.5 flash vision model to extract structured metadata.
     """
+    effective_key = api_key or settings.GEMINI_API_KEY
     if (
         "pytest" in sys.modules
-        or not settings.GEMINI_API_KEY
-        or settings.GEMINI_API_KEY == "your-gemini-api-key"
+        or not effective_key
+        or effective_key == "your-gemini-api-key"
     ):
         return SlideAnalysis(
             slide_title="Mock Slide Title",
@@ -60,7 +63,7 @@ def analyze_frame_with_gemini(frame_bytes: bytes) -> SlideAnalysis:
             contains_new_content=True,
         )
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = genai.Client(api_key=effective_key)
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=[
@@ -86,8 +89,13 @@ def download_video_segment(url: str, start_sec: float, end_sec: float, out_path:
 
     start_str = f"{int(start_sec) // 3600:02d}:{int(start_sec) % 3600 // 60:02d}:{int(start_sec) % 60:02d}"
     end_str = f"{int(end_sec) // 3600:02d}:{int(end_sec) % 3600 // 60:02d}:{int(end_sec) % 60:02d}"
-    cmd = [
-        "yt-dlp",
+
+    import shutil
+
+    yt_executable = shutil.which("yt-dlp")
+    cmd_base = [yt_executable] if yt_executable else [sys.executable, "-m", "yt_dlp"]
+
+    cmd = cmd_base + [
         "-f",
         "worst[ext=mp4]/worst",
         "--download-sections",
@@ -96,7 +104,21 @@ def download_video_segment(url: str, start_sec: float, end_sec: float, out_path:
         out_path,
         url,
     ]
-    subprocess.run(cmd, check=True)
+    try:
+        subprocess.run(cmd, check=True)
+    except (FileNotFoundError, subprocess.CalledProcessError) as e:
+        from app.core.config import settings
+
+        if settings.ENVIRONMENT == "local":
+            print(
+                f"WARNING: yt-dlp video segment download failed ({e}). Creating dummy video segment for local development bypass."
+            )
+            with open(out_path, "wb") as f:
+                f.write(b"MOCK VIDEO DATA")
+            return
+        raise RuntimeError(
+            "yt-dlp is not installed or not in the system PATH. Please install it to support video extraction."
+        ) from e
 
 
 def extract_frames_from_video(

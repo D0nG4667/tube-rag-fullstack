@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Sparkles, Eye, Play } from "lucide-react";
-import { motion } from "framer-motion";
+import { Loader2, Send, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { type Locale, translations } from "@/lib/translations";
 import SpotlightPanel from "./SpotlightPanel";
+import CustomMarkdown from "./CustomMarkdown";
 
 interface SourceChunk {
 	chunk_id: string;
@@ -15,6 +16,7 @@ interface SourceChunk {
 }
 
 interface Message {
+	id: string;
 	role: "user" | "assistant";
 	text: string;
 	sources?: SourceChunk[];
@@ -24,19 +26,23 @@ interface ChatPanelProps {
 	videoId: string;
 	onSeek: (seconds: number) => void;
 	onFocusChange?: (focused: boolean) => void;
+	geminiApiKey?: string;
+	locale?: string;
+	onApiKeyExpired?: () => void;
 }
 
 export default function ChatPanel({
 	videoId,
 	onSeek,
 	onFocusChange,
+	geminiApiKey,
+	locale = "en",
+	onApiKeyExpired,
 }: ChatPanelProps) {
-	const [messages, setMessages] = useState<Message[]>([
-		{
-			role: "assistant",
-			text: "Hello! I am TubeRAG, your creative AI video assistant. Ask me anything about the slide decks or transcript of this video, and I will search semantic nodes and answer with interactive playback citation badges.",
-		},
-	]);
+	const t = translations[locale as Locale] || translations.en;
+	const isRtl = locale === "ar";
+
+	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput] = useState("");
 	const [loading, setLoading] = useState(false);
 	const chatEndRef = useRef<HTMLDivElement>(null);
@@ -45,38 +51,76 @@ export default function ChatPanel({
 	const [hoveredSlideUrl, setHoveredSlideUrl] = useState<string | null>(null);
 	const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
+	// Initialize localized welcome message
+	useEffect(() => {
+		setMessages([
+			{
+				id: "welcome-msg",
+				role: "assistant",
+				text: isRtl
+					? "مرحباً! أنا TubeRAG، مساعد الفيديو الإبداعي بالذكاء الاصطناعي. اسألني أي شيء عن الشرائح أو النص التلقائي لهذا الفيديو، وسأقوم بالبحث في العقد الدلالية والإجابة بشارات اقتباس تفاعلية."
+					: "Hello! I am TubeRAG, your creative AI video assistant. Ask me anything about the slide decks or transcript of this video, and I will search semantic nodes and answer with interactive playback citation badges.",
+			},
+		]);
+	}, [isRtl]);
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Scroll chat to bottom whenever messages list length or loading state changes
 	useEffect(() => {
 		chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [messages, loading]);
+	}, [messages.length, loading]);
 
 	const handleSend = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!input.trim() || !videoId || loading) return;
 
-		const userMessage = input.trim();
+		const userMsg: Message = {
+			id: `user-${Date.now()}`,
+			role: "user",
+			text: input.trim(),
+		};
+		setMessages((prev) => [...prev, userMsg]);
 		setInput("");
-		setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
 		setLoading(true);
 
 		try {
 			const res = await fetch(
-				`${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat`,
+				`${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/query`,
 				{
 					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ video_id: videoId, message: userMessage }),
+					headers: {
+						"Content-Type": "application/json",
+						...(geminiApiKey ? { "X-Gemini-API-Key": geminiApiKey } : {}),
+					},
+					body: JSON.stringify({
+						video_id: videoId,
+						message: userMsg.text,
+					}),
 				},
 			);
 
 			if (!res.ok) {
-				throw new Error(" RAG server error");
+				if (res.status === 429) {
+					onApiKeyExpired?.();
+					setMessages((prev) => [
+						...prev,
+						{
+							id: `ai-429-${Date.now()}`,
+							role: "assistant",
+							text: isRtl
+								? "⚠️ تم استهلاك حصة المفتاح الافتراضي لـ Gemini. يرجى إدخال مفتاح Gemini الخاص بك لتخطي هذا الحد."
+								: "⚠️ Gemini API free tier quota exceeded. Please configure your own Gemini API Key in settings to bypass this limit.",
+						},
+					]);
+					return;
+				}
+				throw new Error();
 			}
-
 			const data = await res.json();
+
 			setMessages((prev) => [
 				...prev,
 				{
+					id: `ai-res-${Date.now()}`,
 					role: "assistant",
 					text: data.response,
 					sources: data.sources,
@@ -86,8 +130,11 @@ export default function ChatPanel({
 			setMessages((prev) => [
 				...prev,
 				{
+					id: `ai-err-${Date.now()}`,
 					role: "assistant",
-					text: "⚠️ An error occurred while retrieving answer from the RAG engine. Please ensure the backend is running.",
+					text: isRtl
+						? "⚠️ عذراً، فشل وكيل TubeRAG في معالجة طلبك حالياً."
+						: "⚠️ Apologies, the TubeRAG agent failed to process your request at this time.",
 				},
 			]);
 		} finally {
@@ -95,101 +142,17 @@ export default function ChatPanel({
 		}
 	};
 
-	// Parses response text for citation markdown and returns React Nodes
-	const renderMessageText = (text: string, sources: SourceChunk[] = []) => {
-		const citationRegex =
-			/\[(Transcript|Slide) @ (\d{1,2}:\d{2})\]\(cite:(transcript|slide):(\d+)\)/g;
-		const matches = Array.from(text.matchAll(citationRegex));
-
-		if (matches.length === 0) return text;
-
-		const parts = [];
-		let lastIndex = 0;
-
-		for (const match of matches) {
-			const matchIndex = match.index ?? 0;
-			const [fullMatch, type, timeStr, citeType, secondsStr] = match;
-			const seconds = parseInt(secondsStr, 10);
-
-			// Add plain text before match
-			if (matchIndex > lastIndex) {
-				parts.push(text.substring(lastIndex, matchIndex));
-			}
-
-			// Find matching slide source image URL if it is a Slide citation
-			let slideImageUrl: string | null = null;
-			if (citeType === "slide") {
-				const found = sources.find(
-					(src) =>
-						src.chunk_type === "frame" &&
-						Math.abs(src.start_time - seconds) <= 15,
-				);
-				if (found?.image_url) {
-					slideImageUrl = found.image_url;
-				}
-			}
-
-			parts.push(
-				<motion.button
-					key={`${matchIndex}-${seconds}`}
-					type="button"
-					onClick={() => onSeek(seconds)}
-					whileHover={{ scale: 1.08 }}
-					whileTap={{ scale: 0.95 }}
-					transition={{ type: "spring", stiffness: 400, damping: 10 }}
-					onMouseEnter={(e) => {
-						if (slideImageUrl) {
-							setHoveredSlideUrl(slideImageUrl);
-							setMousePos({ x: e.clientX + 10, y: e.clientY - 120 });
-						}
-					}}
-					onMouseMove={(e) => {
-						if (slideImageUrl) {
-							setMousePos({ x: e.clientX + 10, y: e.clientY - 120 });
-						}
-					}}
-					onMouseLeave={() => setHoveredSlideUrl(null)}
-					className={`inline-flex items-center gap-1 px-2 py-0.5 mx-1 text-xs rounded border transition duration-150 select-none cursor-pointer ${
-						citeType === "slide"
-							? "bg-accent-cyan/15 text-accent-cyan border-accent-cyan/30 hover:bg-accent-cyan/25"
-							: "bg-accent-violet/15 text-accent-violet border-accent-violet/30 hover:bg-accent-violet/25"
-					}`}
-				>
-					{citeType === "slide" ? (
-						<Eye className="w-3 h-3" />
-					) : (
-						<Play className="w-3 h-3" />
-					)}
-					<span>
-						{type} @ {timeStr}
-					</span>
-				</motion.button>,
-			);
-
-			lastIndex = matchIndex + fullMatch.length;
-		}
-
-		if (lastIndex < text.length) {
-			parts.push(text.substring(lastIndex));
-		}
-
-		return parts;
-	};
-
 	return (
-		<SpotlightPanel className="flex flex-col h-full rounded-2xl backdrop-blur-2xl bg-zinc-950/20 border border-zinc-800/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] overflow-hidden relative">
-			{/* Slide Image Hover Preview Overlay */}
+		<SpotlightPanel className="flex-1 rounded-xl border border-zinc-200 dark:border-zinc-800/40 bg-white/40 dark:bg-zinc-950/20 flex flex-col min-h-0 overflow-hidden relative shadow-inner transition-colors duration-300">
+			{/* Hover slide visual preview overlay */}
 			{hoveredSlideUrl && (
 				<div
+					className="fixed z-50 w-64 h-36 rounded-lg border border-zinc-700 bg-zinc-900 shadow-2xl overflow-hidden pointer-events-none transition-transform"
 					style={{
-						position: "fixed",
-						left: mousePos.x,
+						left: isRtl ? mousePos.x - 270 : mousePos.x + 15,
 						top: mousePos.y,
-						zIndex: 999,
 					}}
-					className="w-48 aspect-video rounded-lg overflow-hidden border border-accent-cyan bg-zinc-950 shadow-2xl pointer-events-none transition-opacity duration-150"
 				>
-					{/* eslint-disable-next-line @next/next/no-img-element */}
 					<img
 						src={hoveredSlideUrl}
 						alt="Slide Preview"
@@ -199,51 +162,74 @@ export default function ChatPanel({
 			)}
 
 			{/* Header */}
-			<div className="px-4 py-3 border-b border-zinc-800/50 flex items-center gap-2">
+			<div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800/50 flex items-center gap-2">
 				<Sparkles className="w-4 h-4 text-accent-cyan animate-pulse" />
-				<span className="font-semibold text-sm text-zinc-200">
-					TubeRAG Agentic Chat
+				<span className="font-semibold text-sm text-zinc-800 dark:text-zinc-200">
+					{t.chatEngine}
 				</span>
 			</div>
 
 			{/* Messages */}
 			<div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-				{messages.map((msg, idx) => (
-					<div
-						// biome-ignore lint/suspicious/noArrayIndexKey: Order of chat messages list is strictly sequential and stable
-						key={idx}
-						className={`flex gap-3 max-w-[85%] ${
-							msg.role === "user" ? "self-end flex-row-reverse" : "self-start"
-						}`}
-					>
-						<div
-							className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold ${
-								msg.role === "user"
-									? "bg-accent-violet/20 border border-accent-violet/40 text-accent-violet"
-									: "bg-accent-cyan/20 border border-accent-cyan/40 text-accent-cyan"
-							}`}
-						>
-							{msg.role === "user" ? "U" : "AI"}
-						</div>
-						<div
-							className={`p-3 rounded-xl border text-sm leading-relaxed ${
-								msg.role === "user"
-									? "bg-accent-violet/5 border-accent-violet/20 text-zinc-200"
-									: "bg-zinc-900/35 border-zinc-800/35 text-zinc-300"
-							}`}
-						>
-							{msg.role === "user"
-								? msg.text
-								: renderMessageText(msg.text, msg.sources || [])}
-						</div>
+				{messages.length === 0 ? (
+					<div className="flex-1 flex flex-col items-center justify-center text-center p-6 gap-2">
+						<Loader2 className="w-5 h-5 text-accent-cyan animate-spin" />
 					</div>
-				))}
+				) : (
+					messages.map((msg) => {
+						const cardEl = (
+							<div
+								key={msg.id}
+								className={`flex gap-3 max-w-[85%] ${
+									msg.role === "user"
+										? "self-end flex-row-reverse"
+										: "self-start"
+								}`}
+							>
+								<div
+									className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold ${
+										msg.role === "user"
+											? "bg-accent-violet/20 border border-accent-violet/40 text-accent-violet"
+											: "bg-accent-cyan/20 border border-accent-cyan/40 text-accent-cyan"
+									}`}
+								>
+									{msg.role === "user" ? "U" : "AI"}
+								</div>
+								<div
+									className={`p-3 rounded-xl border text-sm leading-relaxed transition-all duration-300 ${
+										msg.role === "user"
+											? "bg-accent-violet/5 border-accent-violet/20 text-zinc-800 dark:text-zinc-200"
+											: "bg-zinc-100/60 dark:bg-zinc-900/35 border-zinc-200 dark:border-zinc-800/35 text-zinc-700 dark:text-zinc-300"
+									}`}
+								>
+									{msg.role === "user" ? (
+										msg.text
+									) : (
+										<CustomMarkdown
+											content={msg.text}
+											onSeek={onSeek}
+											sources={msg.sources || []}
+											onHoverSlide={(url, x, y) => {
+												setHoveredSlideUrl(url);
+												setMousePos({ x, y });
+											}}
+											isRtl={isRtl}
+										/>
+									)}
+								</div>
+							</div>
+						);
+						return cardEl;
+					})
+				)}
 				{loading && (
 					<div className="flex justify-start">
-						<div className="bg-zinc-900/60 text-zinc-300 border border-zinc-800/50 rounded-2xl px-4 py-3 flex items-center gap-2">
+						<div className="bg-zinc-100/80 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl px-4 py-3 flex items-center gap-2">
 							<Loader2 className="w-4 h-4 animate-spin text-accent-cyan" />
 							<span className="text-xs font-semibold text-zinc-400">
-								Retrieving segments & generating grounded answer...
+								{isRtl
+									? "جاري البحث عن المقاطع وصياغة الإجابة..."
+									: "Retrieving segments & generating grounded answer..."}
 							</span>
 						</div>
 					</div>
@@ -254,7 +240,7 @@ export default function ChatPanel({
 			{/* Input form */}
 			<form
 				onSubmit={handleSend}
-				className="p-3 border-t border-zinc-800/50 flex gap-2"
+				className="p-3 border-t border-zinc-200 dark:border-zinc-800/50 flex gap-2"
 			>
 				<input
 					type="text"
@@ -264,11 +250,13 @@ export default function ChatPanel({
 					onBlur={() => onFocusChange?.(false)}
 					placeholder={
 						videoId
-							? "Ask about slide decks or code screens..."
-							: "Select a video to chat..."
+							? t.chatInputPlaceholder
+							: isRtl
+								? "اختر فيديو لبدء الدردشة..."
+								: "Select a video to chat..."
 					}
 					disabled={!videoId || loading}
-					className="flex-1 px-4 py-2 text-sm rounded-lg bg-zinc-900/80 border border-zinc-800 focus:outline-none focus:border-accent-cyan text-zinc-200 placeholder-zinc-500 disabled:opacity-50"
+					className="flex-1 px-4 py-2 text-sm rounded-lg bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:border-accent-cyan text-zinc-800 dark:text-zinc-200 placeholder-zinc-500 disabled:opacity-50 transition-colors duration-300"
 				/>
 				<button
 					type="submit"

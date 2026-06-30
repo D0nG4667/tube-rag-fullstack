@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 :root {
+  --background: #fafafa;
+  --foreground: #09090b;
+  --border: rgba(228, 228, 231, 0.8);
+}
+
+.dark {
   --background: #09090b;
   --foreground: #f4f4f5;
   --border: rgba(63, 63, 70, 0.4);
@@ -13,6 +19,7 @@ body {
   background-color: var(--background);
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Custom premium scrollbars */
@@ -34,6 +41,13 @@ body {
 .glass-panel {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  background-color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(228, 228, 231, 0.5);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .glass-panel {
   background-color: rgba(9, 9, 11, 0.2);
   border: 1px solid rgba(63, 63, 70, 0.35);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
@@ -43,4 +57,45 @@ body {
   background: linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Ruled paper exercise book styling */
+.ruled-paper {
+  background-color: #fdfdfd;
+  background-image: 
+    linear-gradient(rgba(6, 182, 212, 0.04) 1px, transparent 1px);
+  background-size: 100% 28px;
+  line-height: 28px;
+  position: relative;
+  transition: background-color 0.3s ease;
+}
+.dark .ruled-paper {
+  background-color: #070709;
+  background-image: 
+    linear-gradient(rgba(6, 182, 212, 0.02) 1px, transparent 1px);
+}
+
+.ruled-paper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: rgba(239, 68, 68, 0.25);
+}
+
+[dir="ltr"] .ruled-paper {
+  padding-left: 56px;
+  padding-right: 20px;
+}
+[dir="ltr"] .ruled-paper::before {
+  left: 44px;
+}
+
+[dir="rtl"] .ruled-paper {
+  padding-right: 56px;
+  padding-left: 20px;
+}
+[dir="rtl"] .ruled-paper::before {
+  right: 44px;
 }
