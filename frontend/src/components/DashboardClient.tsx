@@ -386,6 +386,16 @@ export default function DashboardClient({ locale }: { locale: string }) {
 						{/* Dark/Light mode toggle */}
 						<ModeToggle />
 
+						{/* Roadmap Link */}
+						<Link
+							href={`/${locale}/roadmap`}
+							className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition"
+							title={locale === "ar" ? "خريطة الطريق" : "Roadmap"}
+						>
+							<Sparkles className="w-3.5 h-3.5 text-accent-cyan" />
+							<span>{locale === "ar" ? "خريطة الطريق" : "Roadmap"}</span>
+						</Link>
+
 						{/* Language Switch Toggle Component (Client routed Link) */}
 						<Link
 							href={locale === "en" ? "/ar" : "/en"}
