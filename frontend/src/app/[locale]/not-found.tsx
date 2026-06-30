@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Network, Home } from "lucide-react";
+import { Home, Network } from "lucide-react";
 import Link from "next/link";
 import MatrixCanvas from "@/components/MatrixCanvas";
 

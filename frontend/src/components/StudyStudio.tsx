@@ -21,8 +21,8 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { type Locale, translations } from "@/lib/translations";
-import SpotlightPanel from "./SpotlightPanel";
 import CustomMarkdown from "./CustomMarkdown";
+import SpotlightPanel from "./SpotlightPanel";
 
 const formatTime = (secs: number) => {
 	const m = Math.floor(secs / 60);
@@ -91,6 +91,7 @@ export default function StudyStudio({
 	const [isMuted, setIsMuted] = useState(false);
 	const [podcastAudioUrl, setPodcastAudioUrl] = useState<string | null>(null);
 	const [loadingAudio, setLoadingAudio] = useState(false);
+	const [audioError, setAudioError] = useState<string | null>(null);
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 
 	// Handwritten Notes State
@@ -183,6 +184,7 @@ export default function StudyStudio({
 	const generatePodcastScript = async () => {
 		if (!videoId) return;
 		setLoadingPodcast(true);
+		setAudioError(null);
 		try {
 			const res = await fetch(
 				`${process.env.NEXT_PUBLIC_API_URL}/api/v1/notebook/podcast`,
@@ -220,6 +222,7 @@ export default function StudyStudio({
 	const generatePodcastAudio = async () => {
 		if (podcastScript.length === 0) return;
 		setLoadingAudio(true);
+		setAudioError(null);
 		try {
 			const res = await fetch(
 				`${process.env.NEXT_PUBLIC_API_URL}/api/v1/notebook/podcast-audio`,
@@ -235,8 +238,9 @@ export default function StudyStudio({
 			if (!res.ok) {
 				if (res.status === 429) {
 					onApiKeyExpired?.();
+					throw new Error("QUOTA_ERROR");
 				}
-				throw new Error();
+				throw new Error("GENERAL_ERROR");
 			}
 			const blob = await res.blob();
 			const url = URL.createObjectURL(blob);
@@ -247,12 +251,21 @@ export default function StudyStudio({
 				audioRef.current.play().catch(() => {});
 				setIsPlayingPodcast(true);
 			}
-		} catch {
-			alert(
-				isRtl
-					? "⚠️ فشل في توليد الصوت الطبيعي للبودكاست."
-					: "⚠️ Failed to generate natural podcast audio.",
-			);
+		} catch (err) {
+			const error = err as Error;
+			if (error?.message === "QUOTA_ERROR") {
+				setAudioError(
+					isRtl
+						? "⚠️ انتهت حصة Gemini المجانية. يرجى توفير مفتاح Gemini الخاص بك لتجاوز الحدود."
+						: "⚠️ Gemini Free Tier quota exceeded. Please provide your own Gemini API Key to continue.",
+				);
+			} else {
+				setAudioError(
+					isRtl
+						? "⚠️ فشل في توليد الصوت الطبيعي للبودكاست. يرجى التحقق من إعدادات المفتاح والمحاولة لاحقاً."
+						: "⚠️ Failed to generate natural podcast audio. Please check your API key configuration and try again.",
+				);
+			}
 		} finally {
 			setLoadingAudio(false);
 		}
@@ -680,6 +693,12 @@ export default function StudyStudio({
 											</button>
 										</div>
 									</div>
+
+									{audioError && (
+										<div className="p-3 rounded-lg border border-red-500/20 bg-red-950/15 text-red-400 text-xs font-semibold animate-fade-in shadow-[0_0_12px_rgba(239,68,68,0.1)]">
+											{audioError}
+										</div>
+									)}
 
 									{/* Script Scrollable Area */}
 									<div className="flex-1 overflow-y-auto flex flex-col gap-3 pr-1 scrollbar-thin">

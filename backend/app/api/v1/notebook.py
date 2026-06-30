@@ -345,7 +345,7 @@ def generate_podcast_audio(
             voice_name = "Aoede" if turn.host == "Rachel" else "Puck"
 
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-2.5-flash-preview-tts",
                 contents=turn.text,
                 config=types.GenerateContentConfig(
                     response_modalities=["AUDIO"],
@@ -414,12 +414,13 @@ def generate_podcast_audio(
         return StreamingResponse(io.BytesIO(combined_wav), media_type="audio/wav")
 
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        import logging
+        logger = logging.getLogger("uvicorn.error")
+        logger.error("TTS podcast audio generation failed: %s", e)
         if is_gemini_quota_error(e):
             raise HTTPException(
                 status_code=429, detail="GEMINI_API_KEY_REQUIRED"
             ) from e
         raise HTTPException(
-            status_code=500, detail=f"TTS podcast audio error: {e!s}"
+            status_code=500, detail="Failed to synthesize voice dialogue clip. Please verify model configuration and try again."
         ) from e

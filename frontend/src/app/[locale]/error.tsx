@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { AlertOctagon, RefreshCw } from "lucide-react";
+import { useEffect } from "react";
 import MatrixCanvas from "@/components/MatrixCanvas";
 
 export default function ErrorPage({

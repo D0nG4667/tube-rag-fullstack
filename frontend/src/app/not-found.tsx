@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Network, Home } from "lucide-react";
+import { Home, Network } from "lucide-react";
 import Link from "next/link";
 import MatrixCanvas from "@/components/MatrixCanvas";
 
@@ -32,7 +32,8 @@ export default function NotFound() {
 						404 - Node Lost
 					</h1>
 					<p className="text-xs text-zinc-400 leading-relaxed px-2">
-						The semantic video segment or workspace folder you are trying to index does not exist in the TubeRAG database.
+						The semantic video segment or workspace folder you are trying to
+						index does not exist in the TubeRAG database.
 					</p>
 				</div>
 

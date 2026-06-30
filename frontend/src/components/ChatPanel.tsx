@@ -3,8 +3,8 @@
 import { Loader2, Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { type Locale, translations } from "@/lib/translations";
-import SpotlightPanel from "./SpotlightPanel";
 import CustomMarkdown from "./CustomMarkdown";
+import SpotlightPanel from "./SpotlightPanel";
 
 interface SourceChunk {
 	chunk_id: string;
