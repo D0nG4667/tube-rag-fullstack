@@ -4,7 +4,7 @@ target-version = "py312"
 
 [lint]
 select = ["E", "F", "I", "N", "UP", "B", "C4", "RUF"]
-ignore = []
+ignore = ["E501", "RUF005", "B008"]
 
 [format]
 quote-style = "double"

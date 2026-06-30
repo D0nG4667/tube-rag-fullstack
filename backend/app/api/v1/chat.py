@@ -4,12 +4,12 @@ import uuid
 from fastapi import APIRouter, Depends, Header, HTTPException
 from google import genai
 from google.genai import types
-from pydantic import BaseModel
 from supabase import Client as SupabaseClient
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_supabase
 from app.core.exceptions import is_gemini_quota_error
+from app.schemas import ChatRequest
 from app.services.prompts import (
     HYDE_SYSTEM_INSTRUCTION,
     HYDE_USER_TEMPLATE,
@@ -20,11 +20,6 @@ from app.services.prompts import (
 from app.services.transcription import get_embedding
 
 router = APIRouter()
-
-
-class ChatRequest(BaseModel):
-    video_id: str
-    message: str
 
 
 def is_valid_uuid(val: str) -> bool:

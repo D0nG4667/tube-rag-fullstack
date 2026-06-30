@@ -6,12 +6,17 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from google import genai
 from google.genai import types
-from pydantic import BaseModel
 from supabase import Client as SupabaseClient
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_supabase
 from app.core.exceptions import is_gemini_quota_error
+from app.schemas import (
+    MindmapSchema,
+    NotebookRequest,
+    PodcastAudioRequest,
+    PodcastScript,
+)
 from app.services.prompts import (
     MINDMAP_SYSTEM_INSTRUCTION,
     MINDMAP_USER_TEMPLATE,
@@ -24,37 +29,6 @@ from app.services.prompts import (
 )
 
 router = APIRouter()
-
-
-class NotebookRequest(BaseModel):
-    video_id: str
-
-
-# Pydantic schemas for structured Gemini outputs
-
-
-class DialogueTurn(BaseModel):
-    host: str  # "Host A" or "Host B"
-    text: str
-
-
-class PodcastScript(BaseModel):
-    script: list[DialogueTurn]
-
-
-class MindmapLeaf(BaseModel):
-    text: str
-    seconds: int
-
-
-class MindmapBranch(BaseModel):
-    title: str
-    leaves: list[MindmapLeaf]
-
-
-class MindmapSchema(BaseModel):
-    subject: str
-    branches: list[MindmapBranch]
 
 
 @router.post("/api/v1/notebook/outline")
@@ -268,10 +242,6 @@ def generate_mindmap(
                 status_code=429, detail="GEMINI_API_KEY_REQUIRED"
             ) from e
         raise HTTPException(status_code=500, detail=f"LLM mindmap error: {e!s}") from e
-
-
-class PodcastAudioRequest(BaseModel):
-    script: list[DialogueTurn]
 
 
 @router.post("/api/v1/notebook/notes")
