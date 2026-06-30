@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,6 +24,13 @@ class Settings(BaseSettings):
     SENTRY_DSN: str = ""
     YOUTUBE_PROXY: str = ""
     SUPADATA_API_KEY: str = ""
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def strip_quotes(cls, v):
+        if isinstance(v, str):
+            return v.strip("\"'")
+        return v
 
 
 @lru_cache
