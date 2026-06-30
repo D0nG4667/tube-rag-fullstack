@@ -21,6 +21,8 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import Footer from "@/components/Footer";
+import { ModeToggle } from "@/components/ModeToggle";
 
 interface RoadmapItem {
 	title: string;
@@ -207,22 +209,35 @@ export default function RoadmapPage() {
 	];
 
 	return (
-		<div className="relative min-h-screen w-screen bg-[#030303] text-zinc-100 overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-400 font-sans pb-20">
-			{/* Blurred decorative ambient circles */}
-			<div className="absolute top-[-10%] left-[-20%] w-[60vw] h-[60vw] rounded-full bg-cyan-900/10 blur-[150px] pointer-events-none" />
-			<div className="absolute bottom-[-10%] right-[-20%] w-[60vw] h-[60vw] rounded-full bg-violet-900/10 blur-[150px] pointer-events-none" />
+		<div className="relative min-h-screen w-full flex flex-col bg-white dark:bg-[#030303] text-zinc-800 dark:text-zinc-100 overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-400 font-sans transition-colors duration-300">
+			{/* Blurred decorative ambient background wrapper */}
+			<div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+				<div className="absolute top-[-10%] left-[-20%] w-[60vw] h-[60vw] rounded-full bg-cyan-900/10 dark:bg-cyan-900/5 blur-[150px]" />
+				<div className="absolute bottom-[-10%] right-[-20%] w-[60vw] h-[60vw] rounded-full bg-violet-900/10 dark:bg-violet-900/5 blur-[150px]" />
+			</div>
 
 			{/* Center container */}
-			<div className="max-w-4xl mx-auto px-6 pt-10 flex flex-col gap-10">
-				{/* Top bar back navigation */}
-				<div className="flex justify-between items-center z-10">
-					<Link
-						href={`/${locale}`}
-						className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 backdrop-blur-md text-xs font-semibold text-zinc-400 hover:text-white hover:border-zinc-700 transition duration-300"
-					>
-						<ArrowLeft className={`w-4 h-4 ${isRtl ? "rotate-180" : ""}`} />
-						{isRtl ? "العودة لمساحة العمل" : "Back to Workspace"}
-					</Link>
+			<div className="max-w-4xl mx-auto w-full px-6 pt-10 pb-16 flex flex-col gap-10 flex-1">
+				{/* Top bar back navigation & Toggles */}
+				<div className="flex justify-between items-center z-10 flex-wrap gap-3">
+					<div className="flex items-center gap-3">
+						<Link
+							href={`/${locale}`}
+							className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-950/40 backdrop-blur-md text-xs font-semibold text-zinc-650 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-700 transition duration-300"
+						>
+							<ArrowLeft className={`w-4 h-4 ${isRtl ? "rotate-180" : ""}`} />
+							{isRtl ? "العودة لمساحة العمل" : "Back to Workspace"}
+						</Link>
+
+						<ModeToggle />
+
+						<Link
+							href={locale === "en" ? "/ar/roadmap" : "/en/roadmap"}
+							className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-950/40 backdrop-blur-md text-zinc-650 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-700 transition"
+						>
+							{locale === "en" ? "العربية" : "English"}
+						</Link>
+					</div>
 
 					<button
 						type="button"
@@ -236,16 +251,16 @@ export default function RoadmapPage() {
 
 				{/* Header Intro */}
 				<div className="text-center flex flex-col items-center gap-4 mt-6 z-10">
-					<div className="px-3 py-1 rounded-full bg-cyan-950/30 border border-cyan-500/20 text-cyan-400 text-[10px] font-extrabold tracking-widest uppercase flex items-center gap-1.5 animate-pulse">
+					<div className="px-3 py-1 rounded-full bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-300/30 dark:border-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-[10px] font-extrabold tracking-widest uppercase flex items-center gap-1.5 animate-pulse">
 						<Sparkles className="w-3.5 h-3.5" />
 						{isRtl ? "خريطة طريق المنتج" : "PRODUCT ROADMAP 2026 - 2028"}
 					</div>
-					<h1 className="text-3xl lg:text-5xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-violet-500 max-w-2xl leading-tight">
+					<h1 className="text-3xl lg:text-5xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-teal-500 to-violet-600 dark:from-cyan-400 dark:via-teal-300 dark:to-violet-500 max-w-2xl leading-tight">
 						{isRtl
 							? "مستقبل محركات البحث للمحاضرات"
 							: "The Future of Multimodal Lecture RAG"}
 					</h1>
-					<p className="text-sm text-zinc-400 max-w-xl leading-relaxed">
+					<p className="text-sm text-zinc-600 dark:text-zinc-400 max-w-xl leading-relaxed">
 						{isRtl
 							? "خطتنا الاستراتيجية لتطوير منصة TubeRAG وتحويلها إلى رفيق الدراسة المفضل للمطورين والمؤسسات الأكاديمية. ساعدنا في تحقيق ذلك!"
 							: "Our strategic timeline to scale TubeRAG into the ultimate study companion for engineers, students, and workspaces. Join us on this journey!"}
@@ -253,16 +268,16 @@ export default function RoadmapPage() {
 				</div>
 
 				{/* Support Callout Banner */}
-				<div className="glass-panel p-6 rounded-2xl border border-zinc-800/80 bg-zinc-950/40 backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6 z-10 shadow-xl shadow-cyan-950/5 relative overflow-hidden">
+				<div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6 z-10 shadow-xl relative overflow-hidden">
 					<div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none" />
 					<div className="flex flex-col gap-1.5 md:max-w-lg text-center md:text-start">
-						<span className="text-sm font-bold text-zinc-100 flex items-center gap-2 justify-center md:justify-start">
+						<span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2 justify-center md:justify-start">
 							🚀{" "}
 							{isRtl
 								? "ادعم طموحنا لتسريع البناء"
 								: "Accelerate Our Build Process"}
 						</span>
-						<span className="text-xs text-zinc-400 leading-relaxed">
+						<span className="text-xs text-zinc-650 dark:text-zinc-300 leading-relaxed font-medium">
 							{isRtl
 								? "نحن نؤمن بالوصول المفتوح والتكنولوجيا اللاسيرفرية. دعمك السخي يغطي تكاليف الاستضافة واستدعاء نماذج الذكاء الاصطناعي ويسرع إصدار الميزات القادمة."
 								: "We believe in open learning tools and high-fidelity tech. Your contributions fund backend operations, API calls, and directly fast-tracks upcoming features."}
@@ -282,17 +297,17 @@ export default function RoadmapPage() {
 				<div className="flex flex-col gap-12 mt-4 relative">
 					{/* Central line connection */}
 					<div
-						className={`absolute top-10 bottom-10 w-0.5 bg-zinc-900 hidden md:block ${isRtl ? "right-[calc(50%-1px)]" : "left-[calc(50%-1px)]"}`}
+						className={`absolute top-10 bottom-10 w-0.5 bg-zinc-200 dark:bg-zinc-800 hidden md:block ${isRtl ? "right-[calc(50%-1px)]" : "left-[calc(50%-1px)]"}`}
 					/>
 
 					{phases.map((phase, idx) => {
 						const isEven = idx % 2 === 0;
 						const statusColor =
 							phase.status === "completed"
-								? "bg-emerald-950/30 border-emerald-500/20 text-emerald-400"
+								? "bg-emerald-500/10 dark:bg-emerald-950/30 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
 								: phase.status === "in-progress"
-									? "bg-cyan-950/30 border-cyan-500/20 text-cyan-400"
-									: "bg-zinc-900 border-zinc-800 text-zinc-500";
+									? "bg-cyan-500/10 dark:bg-cyan-950/30 border-cyan-500/20 text-cyan-600 dark:text-cyan-400"
+									: "bg-zinc-100 dark:bg-zinc-900 border-zinc-250 dark:border-zinc-800 text-zinc-500";
 
 						const statusText =
 							phase.status === "completed"
@@ -322,14 +337,14 @@ export default function RoadmapPage() {
 							>
 								{/* Left/Right content card */}
 								<div className="flex-1 flex flex-col">
-									<div className="glass-panel p-6 rounded-2xl border border-zinc-800 bg-zinc-950/20 backdrop-blur-md hover:border-zinc-700/60 transition duration-300 flex flex-col gap-4 shadow-xl">
+									<div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 backdrop-blur-md hover:border-zinc-300 dark:hover:border-zinc-700/60 transition duration-300 flex flex-col gap-4 shadow-xl">
 										{/* Phase Timeline and Status */}
-										<div className="flex items-center justify-between border-b border-zinc-900 pb-3 shrink-0">
+										<div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800/80 pb-3 shrink-0">
 											<div className="flex flex-col gap-0.5">
-												<span className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest">
+												<span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono uppercase tracking-widest">
 													{isRtl ? phase.timelineAr : phase.timeline}
 												</span>
-												<h2 className="text-sm font-extrabold uppercase tracking-wide text-zinc-200">
+												<h2 className="text-sm font-extrabold uppercase tracking-wide text-zinc-850 dark:text-zinc-100">
 													{isRtl ? phase.phaseTitleAr : phase.phaseTitle}
 												</h2>
 											</div>
@@ -359,22 +374,22 @@ export default function RoadmapPage() {
 
 												const itemStatusColor =
 													item.status === "completed"
-														? "text-emerald-400 bg-emerald-950/20"
+														? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-950/20"
 														: item.status === "in-dev"
-															? "text-cyan-400 bg-cyan-950/20 animate-pulse"
-															: "text-zinc-500 bg-zinc-900/50";
+															? "text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 dark:bg-cyan-950/20 animate-pulse"
+															: "text-zinc-500 bg-zinc-100 dark:bg-zinc-900/50 border border-zinc-250 dark:border-zinc-800/60";
 
 												return (
 													<div
 														key={item.title}
 														className="flex items-start gap-3"
 													>
-														<div className="p-2 rounded bg-zinc-900 text-cyan-400 border border-zinc-800 shrink-0">
+														<div className="p-2 rounded bg-zinc-150 dark:bg-zinc-850 text-cyan-600 dark:text-cyan-400 border border-zinc-250 dark:border-zinc-800 shrink-0">
 															<ItemIcon className="w-4 h-4" />
 														</div>
 														<div className="flex-1 flex flex-col gap-0.5">
 															<div className="flex items-center gap-2 flex-wrap">
-																<h3 className="text-xs font-bold text-zinc-100">
+																<h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
 																	{isRtl ? item.titleAr : item.title}
 																</h3>
 																<span
@@ -383,7 +398,7 @@ export default function RoadmapPage() {
 																	{itemStatusText}
 																</span>
 															</div>
-															<p className="text-[11px] text-zinc-400 leading-normal">
+															<p className="text-[11px] text-zinc-650 dark:text-zinc-350 leading-normal font-medium">
 																{isRtl ? item.descAr : item.desc}
 															</p>
 														</div>
@@ -395,7 +410,7 @@ export default function RoadmapPage() {
 								</div>
 
 								{/* Timeline node dot indicator */}
-								<div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full border-2 border-zinc-800 bg-[#030303] hidden md:flex items-center justify-center">
+								<div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 w-4 h-4 rounded-full border-2 border-zinc-300 dark:border-zinc-800 bg-white dark:bg-[#030303] hidden md:flex items-center justify-center">
 									<div
 										className={`w-1.5 h-1.5 rounded-full ${phase.status === "completed" ? "bg-emerald-500" : phase.status === "in-progress" ? "bg-cyan-500" : "bg-zinc-700"}`}
 									/>
@@ -408,6 +423,8 @@ export default function RoadmapPage() {
 					})}
 				</div>
 			</div>
+
+			<Footer locale={locale} />
 
 			{/* Coffee Modal popup */}
 			{isCoffeeModalOpen && (

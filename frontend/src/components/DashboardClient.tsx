@@ -310,7 +310,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 	);
 
 	return (
-		<main className="relative min-h-screen w-screen flex text-zinc-800 dark:text-zinc-100 overflow-hidden bg-background">
+		<main className="relative h-screen w-full flex text-zinc-800 dark:text-zinc-100 overflow-hidden bg-background">
 			{/* 3D background canvas layer */}
 			<MatrixCanvas
 				active={hasActiveJob}
@@ -425,14 +425,16 @@ export default function DashboardClient({ locale }: { locale: string }) {
 				{/* Viewport & chat splits + StudyStudio */}
 				<div
 					className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 overflow-y-auto lg:overflow-hidden relative"
-					style={{ userSelect: isDragging ? "none" : "auto" }}
+					style={{
+						userSelect: isDragging || isRightDragging ? "none" : "auto",
+					}}
 				>
 					{/* Left panel: player container */}
 					<div
 						className="flex flex-col gap-4 min-h-[300px] lg:min-h-0 shrink-0"
 						style={{
 							width: isMobile ? "100%" : `${splitWidth}%`,
-							pointerEvents: isDragging ? "none" : "auto",
+							pointerEvents: isDragging || isRightDragging ? "none" : "auto",
 						}}
 					>
 						<div className="glass-panel p-4 rounded-xl flex-1 flex flex-col justify-center min-h-0">
@@ -683,6 +685,9 @@ export default function DashboardClient({ locale }: { locale: string }) {
 					<AlertCircle className="w-4 h-4 shrink-0" />
 					<span>{toastMessage.text}</span>
 				</div>
+			)}
+			{(isDragging || isRightDragging) && (
+				<div className="fixed inset-0 z-[999] cursor-col-resize select-none pointer-events-auto bg-transparent" />
 			)}
 		</main>
 	);

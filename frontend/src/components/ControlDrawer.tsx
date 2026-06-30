@@ -14,6 +14,7 @@ import {
 	X,
 } from "lucide-react";
 import { useState } from "react";
+import Footer from "@/components/Footer";
 import { type Locale, translations } from "@/lib/translations";
 
 interface VideoNode {
@@ -133,7 +134,7 @@ export default function ControlDrawer({
 		>
 			{/* Fixed-width Inner Container to prevent squishing text on width resize */}
 			<div
-				className="w-[320px] h-full flex flex-col overflow-hidden"
+				className="w-[320px] flex-grow flex flex-col overflow-hidden"
 				style={{
 					opacity: isOpen ? 1 : 0,
 					pointerEvents: isOpen ? "auto" : "none",
@@ -298,6 +299,7 @@ export default function ControlDrawer({
 						</div>
 					)}
 				</div>
+				<Footer locale={locale} minimal />
 			</div>
 
 			{/* Expand/Collapse border toggle handle button */}

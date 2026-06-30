@@ -58,7 +58,7 @@ export default function RootLayout({
 				/>
 			</head>
 			<body
-				className="antialiased bg-zinc-950 text-zinc-100 transition-colors duration-300"
+				className="antialiased bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300"
 				suppressHydrationWarning
 			>
 				<ThemeProvider

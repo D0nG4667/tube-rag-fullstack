@@ -35,6 +35,13 @@ The codebase is organized as a monorepo containing two distinct root packages:
    * Generates a hypothetical technical answer (HyDE query expansion) using Gemini.
    * Performs hybrid semantic/full-text search against pgvector.
    * Feeds matching transcript contexts and slide frame images to Gemini to generate answers with interactive playback citation badges.
+4. **Client-Side Cryptography (BYOK):** Secures user API keys using client-side AES-GCM and PBKDF2 local encryption. Keys are decrypted in-memory only and propagated in headers without altering global states.
+5. **Resizable 3-Column Studio Layout:** Incorporates a workspace filter drawer (left), active viewport player & chat console (center), and StudyStudio (right). Columns are resizable with full-screen cursor capture.
+6. **StudyStudio Outlines, Podcasts, & Mindmaps:**
+   * Generates detailed educational outlines from retrieved video chunks.
+   * Alternates speaker voices in a dynamic Podcast view utilizing `gemini-3.1-flash-tts-preview` script synthesis with automatic fallbacks.
+   * Connects concepts dynamically using SVG bezier lines in an interactive Mindmap. Clicking nodes seeks the video player instantly to the timestamp.
+7. ** Strategic 3-Year Roadmap:** Detailed strategic phases timeline viewable at `/[locale]/roadmap`, supporting bilingual Arabic/English translations, theme-aware Dark/Light toggling, and support modals.
 
 ---
 
@@ -99,7 +106,7 @@ For commercial licensing, custom implementations, or collaboration opportunities
 <br>
 <hr>
 <p align="center">
-  <b>Made with ❤️ by <a href="https://linkedin.com/in/dr-gabriel-okundaye" target="_blank">Gabriel Okundaye - Plaude Poll Team</a></b>
+  <b>Made with ❤️ by <a href="https://linkedin.com/in/dr-gabriel-okundaye" target="_blank">Gabriel Okundaye - TubeRAG</a></b>
   <br>
   🌐 <a href="https://gabcares.xyz" target="_blank">gabcares.xyz</a> &nbsp;|&nbsp; 🐙 <a href="https://github.com/D0nG4667" target="_blank">GitHub</a>
 </p>
