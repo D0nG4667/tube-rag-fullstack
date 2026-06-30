@@ -18,5 +18,9 @@ module.exports = {
 			},
 		},
 	},
-	plugins: [],
+	plugins: [
+		({ addVariant }) => {
+			addVariant("data-active", ["&[data-active]", "&[data-state=active]", '&[aria-selected="true"]']);
+		},
+	],
 };

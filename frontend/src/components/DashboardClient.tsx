@@ -2,6 +2,8 @@
 
 import {
 	AlertCircle,
+	BookOpen,
+	BrainCircuit,
 	Eye,
 	EyeOff,
 	Key,
@@ -9,18 +11,24 @@ import {
 	Lock,
 	Menu,
 	Settings as SettingsIcon,
-	Sparkles,
 	Trash2,
 	Unlock,
 	X,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { PanelImperativeHandle } from "react-resizable-panels";
 import ChatPanel from "@/components/ChatPanel";
 import ControlDrawer from "@/components/ControlDrawer";
 import MatrixCanvas from "@/components/MatrixCanvas";
 import { ModeToggle } from "@/components/ModeToggle";
 import StudyStudio from "@/components/StudyStudio";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+	ResizableHandle,
+	ResizablePanel,
+	ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { VideoPlayer, type VideoPlayerRef } from "@/components/VideoPlayer";
 import { decryptApiKey, encryptApiKey } from "@/lib/crypto";
 import { supabase } from "@/lib/supabase";
@@ -39,12 +47,10 @@ export default function DashboardClient({ locale }: { locale: string }) {
 	const [videos, setVideos] = useState<VideoNode[]>([]);
 	const [selectedVideo, setSelectedVideo] = useState<VideoNode | null>(null);
 	const playerRef = useRef<VideoPlayerRef>(null);
+	const rightPanelRef = useRef<PanelImperativeHandle>(null);
 
-	const [splitWidth, setSplitWidth] = useState(50); // default 50% split width
-	const [isDragging, setIsDragging] = useState(false);
-	const [rightSplitWidth, setRightSplitWidth] = useState(480); // default 480px
-	const [isRightDragging, setIsRightDragging] = useState(false);
 	const [isChatFocused, setIsChatFocused] = useState(false);
+	const [isDraggingLayout, setIsDraggingLayout] = useState(false);
 
 	const [isMobile, setIsMobile] = useState(false);
 	const [isLeftOpen, setIsLeftOpen] = useState(true);
@@ -66,6 +72,13 @@ export default function DashboardClient({ locale }: { locale: string }) {
 		window.addEventListener("resize", check);
 		return () => window.removeEventListener("resize", check);
 	}, []);
+
+	useEffect(() => {
+		if (!isDraggingLayout) return;
+		const handlePointerUp = () => setIsDraggingLayout(false);
+		window.addEventListener("pointerup", handlePointerUp);
+		return () => window.removeEventListener("pointerup", handlePointerUp);
+	}, [isDraggingLayout]);
 
 	// Custom Gemini API Key state
 	const [geminiApiKey, setGeminiApiKey] = useState<string>(
@@ -177,43 +190,6 @@ export default function DashboardClient({ locale }: { locale: string }) {
 			"info",
 		);
 	};
-
-	const handleMouseDown = (e: React.MouseEvent) => {
-		e.preventDefault();
-		setIsDragging(true);
-	};
-
-	const handleRightMouseDown = (e: React.MouseEvent) => {
-		e.preventDefault();
-		setIsRightDragging(true);
-	};
-
-	useEffect(() => {
-		if (!isDragging && !isRightDragging) return;
-
-		const handleMouseMove = (e: MouseEvent) => {
-			if (isDragging) {
-				const percentage = (e.clientX / window.innerWidth) * 100;
-				setSplitWidth(Math.max(30, Math.min(70, percentage)));
-			}
-			if (isRightDragging) {
-				const width = window.innerWidth - e.clientX;
-				setRightSplitWidth(Math.max(280, Math.min(600, width)));
-			}
-		};
-
-		const handleMouseUp = () => {
-			setIsDragging(false);
-			setIsRightDragging(false);
-		};
-
-		window.addEventListener("mousemove", handleMouseMove);
-		window.addEventListener("mouseup", handleMouseUp);
-		return () => {
-			window.removeEventListener("mousemove", handleMouseMove);
-			window.removeEventListener("mouseup", handleMouseUp);
-		};
-	}, [isDragging, isRightDragging]);
 
 	const fetchVideos = useCallback(async () => {
 		try {
@@ -347,7 +323,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 						>
 							<Menu className="w-4 h-4" />
 						</button>
-						<Sparkles className="w-5 h-5 text-accent-cyan hidden lg:block" />
+						<BrainCircuit className="w-5 h-5 text-accent-cyan hidden lg:block" />
 						<h1 className="text-xs lg:text-sm font-semibold tracking-wider uppercase text-zinc-800 dark:text-zinc-200">
 							{t.headerTitle}
 						</h1>
@@ -386,13 +362,35 @@ export default function DashboardClient({ locale }: { locale: string }) {
 						{/* Dark/Light mode toggle */}
 						<ModeToggle />
 
+						{/* Toggle StudyStudio Panel */}
+						<button
+							type="button"
+							onClick={() => {
+								if (isRightOpen) {
+									rightPanelRef.current?.collapse();
+								} else {
+									rightPanelRef.current?.expand();
+								}
+							}}
+							className={`p-1.5 rounded-full border transition-all duration-300 ${
+								isRightOpen
+									? "border-cyan-300 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-950/20 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-950/40"
+									: "border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+							}`}
+							title={
+								locale === "ar" ? "تبديل استوديو الدراسة" : "Toggle StudyStudio"
+							}
+						>
+							<BookOpen className="w-4 h-4" />
+						</button>
+
 						{/* Roadmap Link */}
 						<Link
 							href={`/${locale}/roadmap`}
 							className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition"
 							title={locale === "ar" ? "خريطة الطريق" : "Roadmap"}
 						>
-							<Sparkles className="w-3.5 h-3.5 text-accent-cyan" />
+							<BrainCircuit className="w-3.5 h-3.5 text-accent-cyan" />
 							<span>{locale === "ar" ? "خريطة الطريق" : "Roadmap"}</span>
 						</Link>
 
@@ -423,255 +421,313 @@ export default function DashboardClient({ locale }: { locale: string }) {
 				</header>
 
 				{/* Viewport & chat splits + StudyStudio */}
-				<div
-					className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 overflow-y-auto lg:overflow-hidden relative"
-					style={{
-						userSelect: isDragging || isRightDragging ? "none" : "auto",
-					}}
-				>
-					{/* Left panel: player container */}
-					<div
-						className="flex flex-col gap-4 min-h-[300px] lg:min-h-0 shrink-0"
-						style={{
-							width: isMobile ? "100%" : `${splitWidth}%`,
-							pointerEvents: isDragging || isRightDragging ? "none" : "auto",
-						}}
-					>
-						<div className="glass-panel p-4 rounded-xl flex-1 flex flex-col justify-center min-h-0">
-							<span className="text-xs text-zinc-500 font-semibold tracking-widest mb-3 block">
-								{t.videoPlayerEngine}
-							</span>
-							<VideoPlayer
-								ref={playerRef}
-								youtubeId={selectedVideo?.youtube_id || ""}
+				<div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
+					{isMobile ? (
+						<div className="flex-grow flex flex-col gap-6 overflow-y-auto p-4 min-h-0">
+							{/* Left panel: player container */}
+							<div className="flex flex-col gap-4 min-h-[300px] shrink-0">
+								<div className="glass-panel p-4 rounded-xl flex-1 flex flex-col justify-center min-h-0">
+									<span className="text-xs text-zinc-500 font-semibold tracking-widest mb-3 block">
+										{t.videoPlayerEngine}
+									</span>
+									<VideoPlayer
+										ref={playerRef}
+										youtubeId={selectedVideo?.youtube_id || ""}
+									/>
+								</div>
+							</div>
+
+							{/* Center panel: Agentic chat module */}
+							<div className="flex flex-col min-h-[400px] shrink-0">
+								<ChatPanel
+									videoId={selectedVideo?.id || ""}
+									onSeek={handleSeek}
+									onFocusChange={setIsChatFocused}
+									geminiApiKey={geminiApiKey}
+									locale={locale}
+									onApiKeyExpired={() => setIsSettingsOpen(true)}
+								/>
+							</div>
+
+							{/* Right panel: StudyStudio workspace */}
+							{isRightOpen && (
+								<div className="flex flex-col min-h-[500px] shrink-0">
+									<StudyStudio
+										videoId={selectedVideo?.id || ""}
+										videoTitle={selectedVideo?.title || ""}
+										onSeek={handleSeek}
+										geminiApiKey={geminiApiKey}
+										isOpen={isRightOpen}
+										onToggleOpen={() => setIsRightOpen(!isRightOpen)}
+										locale={locale}
+										onApiKeyExpired={() => setIsSettingsOpen(true)}
+										onShowToast={showToast}
+									/>
+								</div>
+							)}
+						</div>
+					) : (
+						<ResizablePanelGroup
+							orientation="horizontal"
+							className="flex-grow min-h-0 w-full"
+						>
+							<ResizablePanel
+								defaultSize="45%"
+								minSize="25%"
+								maxSize="65%"
+								className="flex flex-col min-h-0 px-3"
+							>
+								<div
+									className="glass-panel p-4 rounded-xl flex-grow flex flex-col justify-center min-h-0 h-full"
+									style={{ pointerEvents: isDraggingLayout ? "none" : "auto" }}
+								>
+									<span className="text-xs text-zinc-500 font-semibold tracking-widest mb-3 block">
+										{t.videoPlayerEngine}
+									</span>
+									<VideoPlayer
+										ref={playerRef}
+										youtubeId={selectedVideo?.youtube_id || ""}
+									/>
+								</div>
+							</ResizablePanel>
+
+							<ResizableHandle
+								withHandle
+								onPointerDown={() => setIsDraggingLayout(true)}
 							/>
-						</div>
-					</div>
 
-					{/* Resizer Handle Bar (Desktop only) */}
-					{!isMobile && (
-						// biome-ignore lint/a11y/noStaticElementInteractions: custom resize resizer handle div
-						<div
-							onMouseDown={handleMouseDown}
-							className={`w-1 cursor-col-resize h-full rounded transition-all duration-150 relative self-stretch flex items-center justify-center ${
-								isDragging
-									? "bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]"
-									: "bg-zinc-300 dark:bg-zinc-800/40 hover:bg-zinc-400 dark:hover:bg-zinc-700/60"
-							}`}
-						>
-							<div className="w-4 h-8 rounded border border-zinc-300 dark:border-zinc-800/80 bg-zinc-100 dark:bg-zinc-950/90 flex items-center justify-center gap-0.5 z-20">
-								<div className="w-0.5 h-3 bg-zinc-400 dark:bg-zinc-600" />
-								<div className="w-0.5 h-3 bg-zinc-400 dark:bg-zinc-600" />
-							</div>
-						</div>
+							<ResizablePanel
+								defaultSize="30%"
+								minSize="20%"
+								className="flex flex-col min-h-0 px-3"
+							>
+								<div
+									className="flex flex-col flex-1 min-h-0 h-full"
+									style={{ pointerEvents: isDraggingLayout ? "none" : "auto" }}
+								>
+									<ChatPanel
+										videoId={selectedVideo?.id || ""}
+										onSeek={handleSeek}
+										onFocusChange={setIsChatFocused}
+										geminiApiKey={geminiApiKey}
+										locale={locale}
+										onApiKeyExpired={() => setIsSettingsOpen(true)}
+									/>
+								</div>
+							</ResizablePanel>
+
+							<ResizableHandle
+								withHandle
+								onPointerDown={() => setIsDraggingLayout(true)}
+							/>
+							<ResizablePanel
+								panelRef={rightPanelRef}
+								defaultSize="25%"
+								minSize="20%"
+								maxSize="40%"
+								collapsible={true}
+								onResize={(size) => {
+									const collapsed = size.asPercentage === 0;
+									if (collapsed && isRightOpen) {
+										setIsRightOpen(false);
+									} else if (!collapsed && !isRightOpen) {
+										setIsRightOpen(true);
+									}
+								}}
+								className="flex flex-col min-h-0 px-3"
+							>
+								<div
+									className="flex flex-col flex-1 min-h-0 h-full"
+									style={{
+										pointerEvents: isDraggingLayout ? "none" : "auto",
+									}}
+								>
+									<StudyStudio
+										videoId={selectedVideo?.id || ""}
+										videoTitle={selectedVideo?.title || ""}
+										onSeek={handleSeek}
+										geminiApiKey={geminiApiKey}
+										isOpen={isRightOpen}
+										onToggleOpen={() => {
+											if (isRightOpen) {
+												rightPanelRef.current?.collapse();
+											} else {
+												rightPanelRef.current?.expand();
+											}
+										}}
+										locale={locale}
+										onApiKeyExpired={() => setIsSettingsOpen(true)}
+										onShowToast={showToast}
+									/>
+								</div>
+							</ResizablePanel>
+						</ResizablePanelGroup>
 					)}
-
-					{/* Center panel: Agentic chat module */}
-					<div className="flex flex-col min-h-[400px] lg:min-h-0 flex-1">
-						<ChatPanel
-							videoId={selectedVideo?.id || ""}
-							onSeek={handleSeek}
-							onFocusChange={setIsChatFocused}
-							geminiApiKey={geminiApiKey}
-							locale={locale}
-							onApiKeyExpired={() => setIsSettingsOpen(true)}
-						/>
-					</div>
-
-					{/* Right Resizer Handle Bar (Desktop only, if right panel is open) */}
-					{!isMobile && isRightOpen && (
-						// biome-ignore lint/a11y/noStaticElementInteractions: custom resize resizer handle div
-						<div
-							onMouseDown={handleRightMouseDown}
-							className={`w-1 cursor-col-resize h-full rounded transition-all duration-150 relative self-stretch flex items-center justify-center ${
-								isRightDragging
-									? "bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]"
-									: "bg-zinc-300 dark:bg-zinc-800/40 hover:bg-zinc-400 dark:hover:bg-zinc-700/60"
-							}`}
-						>
-							<div className="w-4 h-8 rounded border border-zinc-300 dark:border-zinc-800/80 bg-zinc-100 dark:bg-zinc-950/90 flex items-center justify-center gap-0.5 z-20">
-								<div className="w-0.5 h-3 bg-zinc-400 dark:bg-zinc-600" />
-								<div className="w-0.5 h-3 bg-zinc-400 dark:bg-zinc-600" />
-							</div>
-						</div>
-					)}
-
-					{/* Right panel: StudyStudio workspace */}
-					<StudyStudio
-						videoId={selectedVideo?.id || ""}
-						videoTitle={selectedVideo?.title || ""}
-						onSeek={handleSeek}
-						geminiApiKey={geminiApiKey}
-						isOpen={isRightOpen}
-						onToggleOpen={() => setIsRightOpen(!isRightOpen)}
-						locale={locale}
-						onApiKeyExpired={() => setIsSettingsOpen(true)}
-						width={rightSplitWidth}
-						onShowToast={showToast}
-					/>
 				</div>
 			</div>
 
 			{/* Settings Modal (BYOK Setup) */}
-			{isSettingsOpen && (
-				<div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-					<div className="p-6 rounded-2xl max-w-md w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col gap-4 shadow-2xl transition-colors duration-300">
-						<div className="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-zinc-800">
-							<div className="flex items-center gap-2 font-sans">
-								<Key className="w-5 h-5 text-accent-cyan" />
-								<h2 className="text-md font-semibold text-zinc-800 dark:text-zinc-100">
-									{t.settingsTitle}
-								</h2>
-							</div>
-							<button
-								type="button"
-								onClick={() => setIsSettingsOpen(false)}
-								className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition"
-							>
-								<X className="w-4 h-4" />
-							</button>
+			<Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+				<DialogContent
+					showCloseButton={false}
+					className="max-w-md p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-2xl flex flex-col gap-4"
+				>
+					<div className="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-zinc-800">
+						<div className="flex items-center gap-2 font-sans">
+							<Key className="w-5 h-5 text-accent-cyan" />
+							<h2 className="text-md font-semibold text-zinc-800 dark:text-zinc-100">
+								{t.settingsTitle}
+							</h2>
 						</div>
+						<button
+							type="button"
+							onClick={() => setIsSettingsOpen(false)}
+							className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition"
+						>
+							<X className="w-4 h-4" />
+						</button>
+					</div>
 
-						<p className="text-xs text-zinc-700 dark:text-zinc-400 leading-relaxed">
-							{t.settingsDesc}
-						</p>
+					<p className="text-xs text-zinc-700 dark:text-zinc-400 leading-relaxed">
+						{t.settingsDesc}
+					</p>
 
-						<form onSubmit={handleSaveKey} className="flex flex-col gap-4">
-							<div className="flex flex-col gap-1.5">
-								<label
-									htmlFor="gemini-api-key"
-									className="text-xs text-zinc-700 dark:text-zinc-400 font-semibold"
-								>
-									{locale === "ar" ? "مفتاح GEMINI API" : "GEMINI API KEY"}
-								</label>
-								<div className="relative">
-									<input
-										id="gemini-api-key"
-										type={showApiKey ? "text" : "password"}
-										value={tempApiKey}
-										onChange={(e) => setTempApiKey(e.target.value)}
-										placeholder={t.keyPlaceholder}
-										className="w-full pl-3 pr-10 py-2 text-sm rounded bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:border-accent-cyan text-zinc-800 dark:text-zinc-200"
-										required
-									/>
-									<button
-										type="button"
-										onClick={() => setShowApiKey(!showApiKey)}
-										className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-350"
-									>
-										{showApiKey ? (
-											<EyeOff className="w-4 h-4" />
-										) : (
-											<Eye className="w-4 h-4" />
-										)}
-									</button>
-								</div>
-							</div>
-
-							<div className="flex flex-col gap-1.5">
-								<label
-									htmlFor="passphrase"
-									className="text-xs text-zinc-700 dark:text-zinc-400 font-semibold"
-								>
-									{t.passphraseLabel}
-								</label>
+					<form onSubmit={handleSaveKey} className="flex flex-col gap-4">
+						<div className="flex flex-col gap-1.5">
+							<label
+								htmlFor="gemini-api-key"
+								className="text-xs text-zinc-700 dark:text-zinc-400 font-semibold"
+							>
+								{locale === "ar" ? "مفتاح GEMINI API" : "GEMINI API KEY"}
+							</label>
+							<div className="relative">
 								<input
-									id="passphrase"
-									type="password"
-									value={passphrase}
-									onChange={(e) => setPassphrase(e.target.value)}
-									placeholder={t.passphraseSetupPlaceholder}
-									className="w-full px-3 py-2 text-sm rounded bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:border-accent-cyan text-zinc-800 dark:text-zinc-200"
+									id="gemini-api-key"
+									type={showApiKey ? "text" : "password"}
+									value={tempApiKey}
+									onChange={(e) => setTempApiKey(e.target.value)}
+									placeholder={t.keyPlaceholder}
+									className="w-full pl-3 pr-10 py-2 text-sm rounded bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:border-accent-cyan text-zinc-800 dark:text-zinc-200"
 									required
 								/>
-								<span className="text-[10px] text-amber-600 dark:text-amber-500 font-medium leading-normal">
-									{locale === "ar"
-										? "⚠️ تحذير: لا يتم حفظ عبارة المرور على أي خادم مطلقًا. في حال فقدانها، يجب عليك مسح المفتاح وإعادة إدخاله."
-										: "⚠️ Warning: The passphrase is never stored on any server. If lost, you must clear and re-enter your API key."}
-								</span>
-							</div>
-
-							<div className="flex gap-3 mt-2">
 								<button
-									type="submit"
-									className="flex-1 py-2 text-sm rounded-lg font-semibold bg-accent-cyan/95 hover:bg-accent-cyan text-zinc-950 transition"
+									type="button"
+									onClick={() => setShowApiKey(!showApiKey)}
+									className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-350"
 								>
-									{t.saveSettingsBtn}
+									{showApiKey ? (
+										<EyeOff className="w-4 h-4" />
+									) : (
+										<Eye className="w-4 h-4" />
+									)}
 								</button>
-								{hasSavedKey && (
-									<button
-										type="button"
-										onClick={handleClearKey}
-										className="px-3 py-2 text-sm rounded-lg font-semibold border border-red-500/20 bg-red-950/10 text-red-500 dark:text-red-400 hover:bg-red-950/30 transition flex items-center justify-center"
-										title={t.clearSettingsBtn}
-									>
-										<Trash2 className="w-4 h-4" />
-									</button>
-								)}
 							</div>
-						</form>
-					</div>
-				</div>
-			)}
-
-			{/* Unlock Passphrase Dialog on Load */}
-			{isUnlockModalOpen && (
-				<div className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
-					<div className="p-6 rounded-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col gap-4 shadow-2xl text-center transition-colors duration-300">
-						<div className="mx-auto p-3 rounded-full bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-300 dark:border-cyan-500/20 w-fit">
-							<Unlock className="w-6 h-6 text-accent-cyan animate-pulse" />
 						</div>
 
-						<div>
-							<h2 className="text-md font-semibold text-zinc-800 dark:text-zinc-100">
-								{t.lockedOverlayTitle}
-							</h2>
-							<p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-								{t.lockedOverlayDesc}
-							</p>
-						</div>
-
-						<form onSubmit={handleUnlockKey} className="flex flex-col gap-3">
+						<div className="flex flex-col gap-1.5">
+							<label
+								htmlFor="passphrase"
+								className="text-xs text-zinc-700 dark:text-zinc-400 font-semibold"
+							>
+								{t.passphraseLabel}
+							</label>
 							<input
+								id="passphrase"
 								type="password"
-								value={unlockPassphrase}
-								onChange={(e) => setUnlockPassphrase(e.target.value)}
-								placeholder={t.passphrasePlaceholder}
-								className="w-full px-3 py-2 text-sm rounded bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-center focus:outline-none focus:border-accent-cyan text-zinc-800 dark:text-zinc-200"
+								value={passphrase}
+								onChange={(e) => setPassphrase(e.target.value)}
+								placeholder={t.passphraseSetupPlaceholder}
+								className="w-full px-3 py-2 text-sm rounded bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:border-accent-cyan text-zinc-800 dark:text-zinc-200"
 								required
 							/>
-							{unlockError && (
-								<p className="text-xs text-red-500 dark:text-red-400">
-									{unlockError}
-								</p>
-							)}
+							<span className="text-[10px] text-amber-600 dark:text-amber-500 font-medium leading-normal">
+								{locale === "ar"
+									? "⚠️ تحذير: لا يتم حفظ عبارة المرور على أي خادم مطلقًا. في حال فقدانها، يجب عليك مسح المفتاح وإعادة إدخاله."
+									: "⚠️ Warning: The passphrase is never stored on any server. If lost, you must clear and re-enter your API key."}
+							</span>
+						</div>
+
+						<div className="flex gap-3 mt-2">
 							<button
 								type="submit"
-								className="w-full py-2 text-sm rounded-lg font-semibold bg-accent-cyan hover:bg-accent-cyan text-zinc-950 transition"
+								className="flex-1 py-2 text-sm rounded-lg font-semibold bg-accent-cyan/95 hover:bg-accent-cyan text-zinc-950 transition"
 							>
-								{t.unlockBtn}
+								{t.saveSettingsBtn}
 							</button>
-							<button
-								type="button"
-								onClick={() => {
-									setIsUnlockModalOpen(false);
-									showToast(
-										locale === "ar"
-											? "المتابعة باستخدام إعدادات مفتاح الخادم الافتراضي."
-											: "Proceeding using default server API key settings.",
-										"info",
-									);
-								}}
-								className="text-xs text-zinc-500 hover:text-zinc-400 mt-1 transition"
-							>
-								{locale === "ar"
-									? "تخطي / استخدام مفتاح الخادم"
-									: "Skip / Use Server Key"}
-							</button>
-						</form>
+							{hasSavedKey && (
+								<button
+									type="button"
+									onClick={handleClearKey}
+									className="px-3 py-2 text-sm rounded-lg font-semibold border border-red-500/20 bg-red-950/10 text-red-500 dark:text-red-400 hover:bg-red-950/30 transition flex items-center justify-center"
+									title={t.clearSettingsBtn}
+								>
+									<Trash2 className="w-4 h-4" />
+								</button>
+							)}
+						</div>
+					</form>
+				</DialogContent>
+			</Dialog>
+
+			{/* Unlock Passphrase Dialog on Load */}
+			<Dialog open={isUnlockModalOpen} onOpenChange={setIsUnlockModalOpen}>
+				<DialogContent
+					showCloseButton={false}
+					className="max-w-sm p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-2xl flex flex-col gap-4 text-center"
+				>
+					<div className="mx-auto p-3 rounded-full bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-300 dark:border-cyan-500/20 w-fit">
+						<Unlock className="w-6 h-6 text-accent-cyan animate-pulse" />
 					</div>
-				</div>
-			)}
+
+					<div>
+						<h2 className="text-md font-semibold text-zinc-800 dark:text-zinc-100">
+							{t.lockedOverlayTitle}
+						</h2>
+						<p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+							{t.lockedOverlayDesc}
+						</p>
+					</div>
+
+					<form onSubmit={handleUnlockKey} className="flex flex-col gap-3">
+						<input
+							type="password"
+							value={unlockPassphrase}
+							onChange={(e) => setUnlockPassphrase(e.target.value)}
+							placeholder={t.passphrasePlaceholder}
+							className="w-full px-3 py-2 text-sm rounded bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-center focus:outline-none focus:border-accent-cyan text-zinc-800 dark:text-zinc-200"
+							required
+						/>
+						{unlockError && (
+							<p className="text-xs text-red-500 dark:text-red-400">
+								{unlockError}
+							</p>
+						)}
+						<button
+							type="submit"
+							className="w-full py-2 text-sm rounded-lg font-semibold bg-accent-cyan hover:bg-accent-cyan text-zinc-950 transition"
+						>
+							{t.unlockBtn}
+						</button>
+						<button
+							type="button"
+							onClick={() => {
+								setIsUnlockModalOpen(false);
+								showToast(
+									locale === "ar"
+										? "المتابعة باستخدام إعدادات مفتاح الخادم الافتراضي."
+										: "Proceeding using default server API key settings.",
+									"info",
+								);
+							}}
+							className="text-xs text-zinc-500 hover:text-zinc-400 mt-1 transition"
+						>
+							{locale === "ar"
+								? "تخطي / استخدام مفتاح الخادم"
+								: "Skip / Use Server Key"}
+						</button>
+					</form>
+				</DialogContent>
+			</Dialog>
 			{toastMessage && (
 				<div
 					className={`fixed bottom-6 right-6 z-[100] px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-slide-up ${
@@ -685,9 +741,6 @@ export default function DashboardClient({ locale }: { locale: string }) {
 					<AlertCircle className="w-4 h-4 shrink-0" />
 					<span>{toastMessage.text}</span>
 				</div>
-			)}
-			{(isDragging || isRightDragging) && (
-				<div className="fixed inset-0 z-[999] cursor-col-resize select-none pointer-events-auto bg-transparent" />
 			)}
 		</main>
 	);

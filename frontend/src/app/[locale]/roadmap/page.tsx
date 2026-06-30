@@ -2,6 +2,7 @@
 import {
 	ArrowLeft,
 	BookOpen,
+	BrainCircuit,
 	Coffee,
 	Database,
 	Download,
@@ -13,7 +14,6 @@ import {
 	Network,
 	Radio,
 	ShieldCheck,
-	Sparkles,
 	Tv,
 	Users,
 	X,
@@ -23,6 +23,8 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import Footer from "@/components/Footer";
 import { ModeToggle } from "@/components/ModeToggle";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface RoadmapItem {
 	title: string;
@@ -252,7 +254,7 @@ export default function RoadmapPage() {
 				{/* Header Intro */}
 				<div className="text-center flex flex-col items-center gap-4 mt-6 z-10">
 					<div className="px-3 py-1 rounded-full bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-300/30 dark:border-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-[10px] font-extrabold tracking-widest uppercase flex items-center gap-1.5 animate-pulse">
-						<Sparkles className="w-3.5 h-3.5" />
+						<BrainCircuit className="w-3.5 h-3.5" />
 						{isRtl ? "خريطة طريق المنتج" : "PRODUCT ROADMAP 2026 - 2028"}
 					</div>
 					<h1 className="text-3xl lg:text-5xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-teal-500 to-violet-600 dark:from-cyan-400 dark:via-teal-300 dark:to-violet-500 max-w-2xl leading-tight">
@@ -348,11 +350,12 @@ export default function RoadmapPage() {
 													{isRtl ? phase.phaseTitleAr : phase.phaseTitle}
 												</h2>
 											</div>
-											<span
+											<Badge
+												variant="outline"
 												className={`px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${statusColor}`}
 											>
 												{statusText}
-											</span>
+											</Badge>
 										</div>
 
 										{/* Items list */}
@@ -392,11 +395,12 @@ export default function RoadmapPage() {
 																<h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
 																	{isRtl ? item.titleAr : item.title}
 																</h3>
-																<span
+																<Badge
+																	variant="outline"
 																	className={`px-1.5 py-0.5 rounded text-[8px] font-semibold ${itemStatusColor}`}
 																>
 																	{itemStatusText}
-																</span>
+																</Badge>
 															</div>
 															<p className="text-[11px] text-zinc-650 dark:text-zinc-350 leading-normal font-medium">
 																{isRtl ? item.descAr : item.desc}
@@ -427,53 +431,54 @@ export default function RoadmapPage() {
 			<Footer locale={locale} />
 
 			{/* Coffee Modal popup */}
-			{isCoffeeModalOpen && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-250">
-					<div className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 relative animate-in zoom-in-95 duration-200">
+			<Dialog open={isCoffeeModalOpen} onOpenChange={setIsCoffeeModalOpen}>
+				<DialogContent
+					showCloseButton={false}
+					className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative"
+				>
+					<button
+						type="button"
+						onClick={() => setIsCoffeeModalOpen(false)}
+						className="absolute top-4 right-4 p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+					>
+						<X className="w-4 h-4" />
+					</button>
+					<div className="flex flex-col items-center text-center space-y-3">
+						<div className="w-12 h-12 rounded-full bg-amber-950/50 border border-amber-800/40 flex items-center justify-center shadow-inner">
+							<Coffee className="w-6 h-6 text-amber-400" />
+						</div>
+						<h3 className="text-lg font-bold text-white">
+							{isRtl ? "دعم عملنا" : "Support our work"}
+						</h3>
+						<p className="text-xs text-zinc-300 leading-relaxed">
+							{isRtl
+								? "نشكرك على رغبتك في دعم مساعد TubeRAG! ☕"
+								: "Thank you for wanting to support TubeRAG! ☕"}
+						</p>
+						<p className="text-xs text-zinc-400 leading-relaxed">
+							{isRtl
+								? "دعمك يساعد في تسريع المرحلة التالية من خريطة الطريق الخاصة بنا."
+								: "Your support helps power the next phase of our strategic roadmap."}
+						</p>
+						<a
+							href={coffeeUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="w-full mt-2 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/30"
+						>
+							<Coffee className="w-3.5 h-3.5 animate-bounce" />
+							{isRtl ? "دعم المساهمين ☕" : "Support Gabcares ☕"}
+						</a>
 						<button
 							type="button"
 							onClick={() => setIsCoffeeModalOpen(false)}
-							className="absolute top-4 right-4 p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+							className="w-full py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-300 text-xs font-semibold rounded-xl transition-all duration-200 cursor-pointer"
 						>
-							<X className="w-4 h-4" />
+							{isRtl ? "حسناً، شكراً!" : "Got it, thanks!"}
 						</button>
-						<div className="flex flex-col items-center text-center space-y-3">
-							<div className="w-12 h-12 rounded-full bg-amber-950/50 border border-amber-800/40 flex items-center justify-center shadow-inner">
-								<Coffee className="w-6 h-6 text-amber-400" />
-							</div>
-							<h3 className="text-lg font-bold text-white">
-								{isRtl ? "دعم عملنا" : "Support our work"}
-							</h3>
-							<p className="text-xs text-zinc-300 leading-relaxed">
-								{isRtl
-									? "نشكرك على رغبتك في دعم مساعد TubeRAG! ☕"
-									: "Thank you for wanting to support TubeRAG! ☕"}
-							</p>
-							<p className="text-xs text-zinc-400 leading-relaxed">
-								{isRtl
-									? "دعمك يساعد في تسريع المرحلة التالية من خريطة الطريق الخاصة بنا."
-									: "Your support helps power the next phase of our strategic roadmap."}
-							</p>
-							<a
-								href={coffeeUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="w-full mt-2 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/30"
-							>
-								<Coffee className="w-3.5 h-3.5 animate-bounce" />
-								{isRtl ? "دعم المساهمين ☕" : "Support Gabcares ☕"}
-							</a>
-							<button
-								type="button"
-								onClick={() => setIsCoffeeModalOpen(false)}
-								className="w-full py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-300 text-xs font-semibold rounded-xl transition-all duration-200 cursor-pointer"
-							>
-								{isRtl ? "حسناً، شكراً!" : "Got it, thanks!"}
-							</button>
-						</div>
 					</div>
-				</div>
-			)}
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

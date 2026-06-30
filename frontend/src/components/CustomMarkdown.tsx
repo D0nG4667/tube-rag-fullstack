@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type React from "react";
+import { Badge } from "@/components/ui/badge";
 
 interface SourceChunk {
 	chunk_id: string;
@@ -82,25 +83,30 @@ export default function CustomMarkdown({
 				const isSlide = type.toLowerCase() === "slide";
 
 				parts.push(
-					<motion.button
+					<Badge
 						key={`cite-${match.index}`}
-						whileHover={{ scale: 1.05 }}
-						whileTap={{ scale: 0.95 }}
-						transition={{ type: "spring", stiffness: 400, damping: 15 }}
-						onClick={() => onSeek(seconds)}
-						onMouseEnter={handleMouseEnter}
-						onMouseMove={handleMouseMove}
-						onMouseLeave={handleMouseLeave}
-						type="button"
-						className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold border transition mx-0.5 align-middle ${
+						variant="outline"
+						className={`align-middle transition mx-0.5 cursor-pointer ${
 							isSlide
 								? "bg-violet-100 dark:bg-violet-950/40 border-violet-300 dark:border-violet-800/40 text-violet-850 dark:text-violet-400 hover:bg-violet-250 dark:hover:bg-violet-900/60"
 								: "bg-cyan-100 dark:bg-cyan-950/40 border-cyan-300 dark:border-cyan-800/40 text-cyan-850 dark:text-cyan-400 hover:bg-cyan-250 dark:hover:bg-cyan-900/60"
 						}`}
+						render={
+							<motion.button
+								whileHover={{ scale: 1.05 }}
+								whileTap={{ scale: 0.95 }}
+								transition={{ type: "spring", stiffness: 400, damping: 15 }}
+								onClick={() => onSeek(seconds)}
+								onMouseEnter={handleMouseEnter}
+								onMouseMove={handleMouseMove}
+								onMouseLeave={handleMouseLeave}
+								type="button"
+							/>
+						}
 					>
 						{isSlide ? "🖼️" : "🎙️"} {isRtl ? (isSlide ? "شريحة" : "نص") : label} @{" "}
 						{timeStr}
-					</motion.button>,
+					</Badge>,
 				);
 				lastIdx = citationRegex.lastIndex;
 			}

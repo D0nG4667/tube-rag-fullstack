@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Footer from "@/components/Footer";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { type Locale, translations } from "@/lib/translations";
 
 interface VideoNode {
@@ -187,118 +189,120 @@ export default function ControlDrawer({
 				</div>
 
 				{/* Videos List */}
-				<div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-					<div className="flex flex-col gap-2 shrink-0">
-						<span className="text-xs text-zinc-400 font-medium tracking-wider">
-							{t.historicalVideoNodes}
-						</span>
+				<ScrollArea className="flex-1">
+					<div className="p-4 flex flex-col gap-3">
+						<div className="flex flex-col gap-2 shrink-0">
+							<span className="text-xs text-zinc-400 font-medium tracking-wider">
+								{t.historicalVideoNodes}
+							</span>
 
-						{/* Search Filter Bar */}
-						<div className="relative">
-							<Search className="w-3.5 h-3.5 text-zinc-500 absolute start-2.5 top-1/2 -translate-y-1/2" />
-							<input
-								type="text"
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder={t.searchPlaceholder}
-								className="w-full ps-8 pe-3 py-1.5 text-xs rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800/80 focus:outline-none focus:border-accent-cyan text-zinc-800 dark:text-zinc-200 placeholder-zinc-500 transition-colors duration-300"
-							/>
+							{/* Search Filter Bar */}
+							<div className="relative">
+								<Search className="w-3.5 h-3.5 text-zinc-500 absolute start-2.5 top-1/2 -translate-y-1/2" />
+								<input
+									type="text"
+									value={searchQuery}
+									onChange={(e) => setSearchQuery(e.target.value)}
+									placeholder={t.searchPlaceholder}
+									className="w-full ps-8 pe-3 py-1.5 text-xs rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800/80 focus:outline-none focus:border-accent-cyan text-zinc-800 dark:text-zinc-200 placeholder-zinc-500 transition-colors duration-300"
+								/>
+							</div>
 						</div>
-					</div>
 
-					{filteredVideos.length === 0 ? (
-						<div className="text-sm text-zinc-500 italic p-4 text-center">
-							{searchQuery ? t.noMatchingVideos : t.noVideosIngested}
-						</div>
-					) : (
-						<div className="flex flex-col gap-1.5">
-							{filteredVideos.map((vid) => {
-								const isSelected = vid.id === selectedVideoId;
-								const isProcessing =
-									vid.status !== "completed" && vid.status !== "failed";
+						{filteredVideos.length === 0 ? (
+							<div className="text-sm text-zinc-500 italic p-4 text-center">
+								{searchQuery ? t.noMatchingVideos : t.noVideosIngested}
+							</div>
+						) : (
+							<div className="flex flex-col gap-1.5">
+								{filteredVideos.map((vid) => {
+									const isSelected = vid.id === selectedVideoId;
+									const isProcessing =
+										vid.status !== "completed" && vid.status !== "failed";
 
-								return (
-									// biome-ignore lint/a11y/useSemanticElements: custom interactive card component
-									<div
-										key={vid.id}
-										role="button"
-										tabIndex={0}
-										onClick={() => onSelectVideo(vid)}
-										onKeyDown={(e) => {
-											if (e.key === "Enter" || e.key === " ") {
-												onSelectVideo(vid);
-											}
-										}}
-										className={`w-full text-start p-3 rounded-lg border text-sm transition flex flex-col gap-1.5 group/card cursor-pointer relative ${
-											isSelected
-												? "bg-accent-cyan/10 border-accent-cyan/40 text-accent-cyan"
-												: "bg-zinc-100/50 dark:bg-zinc-900/20 border-zinc-200 dark:border-zinc-800/40 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-900/60"
-										}`}
-									>
-										<div className="flex items-center justify-between gap-2 w-full">
-											<div className="flex items-center gap-2 font-medium truncate flex-1 min-w-0">
-												<Film className="w-4 h-4 shrink-0 text-zinc-400 group-hover/card:text-accent-cyan transition" />
-												<span className="truncate">
-													{vid.title || vid.youtube_id}
-												</span>
+									return (
+										// biome-ignore lint/a11y/useSemanticElements: custom interactive card component
+										<div
+											key={vid.id}
+											role="button"
+											tabIndex={0}
+											onClick={() => onSelectVideo(vid)}
+											onKeyDown={(e) => {
+												if (e.key === "Enter" || e.key === " ") {
+													onSelectVideo(vid);
+												}
+											}}
+											className={`w-full text-start p-3 rounded-lg border text-sm transition flex flex-col gap-1.5 group/card cursor-pointer relative ${
+												isSelected
+													? "bg-accent-cyan/10 border-accent-cyan/40 text-accent-cyan"
+													: "bg-zinc-100/50 dark:bg-zinc-900/20 border-zinc-200 dark:border-zinc-800/40 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-900/60"
+											}`}
+										>
+											<div className="flex items-center justify-between gap-2 w-full">
+												<div className="flex items-center gap-2 font-medium truncate flex-1 min-w-0">
+													<Film className="w-4 h-4 shrink-0 text-zinc-400 group-hover/card:text-accent-cyan transition" />
+													<span className="truncate">
+														{vid.title || vid.youtube_id}
+													</span>
+												</div>
+
+												{/* Delete Button (Only for non-default videos) */}
+												{!["dQw4w9WgXcQ", "-9bo8HlSxwQ"].includes(
+													vid.youtube_id,
+												) && (
+													<button
+														type="button"
+														onClick={(e) => {
+															e.stopPropagation();
+															setVideoToDelete(vid);
+														}}
+														className="opacity-0 group-hover/card:opacity-100 p-1 rounded hover:bg-red-950/20 text-zinc-500 hover:text-red-400 transition"
+														title="Delete video node"
+													>
+														<Trash2 className="w-3.5 h-3.5" />
+													</button>
+												)}
 											</div>
+											<div className="flex justify-between items-center text-xs w-full">
+												<span className="text-zinc-500 font-mono text-[10px]">
+													ID: {vid.youtube_id}
+												</span>
 
-											{/* Delete Button (Only for non-default videos) */}
-											{!["dQw4w9WgXcQ", "-9bo8HlSxwQ"].includes(
-												vid.youtube_id,
-											) && (
-												<button
-													type="button"
-													onClick={(e) => {
-														e.stopPropagation();
-														setVideoToDelete(vid);
-													}}
-													className="opacity-0 group-hover/card:opacity-100 p-1 rounded hover:bg-red-950/20 text-zinc-500 hover:text-red-400 transition"
-													title="Delete video node"
-												>
-													<Trash2 className="w-3.5 h-3.5" />
-												</button>
-											)}
-										</div>
-										<div className="flex justify-between items-center text-xs w-full">
-											<span className="text-zinc-500 font-mono text-[10px]">
-												ID: {vid.youtube_id}
-											</span>
-
-											{/* Status Indicator */}
-											<div className="flex items-center gap-1.5">
-												<span
-													className={`relative flex h-2 w-2 ${isProcessing ? "animate-pulse" : ""}`}
-												>
+												{/* Status Indicator */}
+												<div className="flex items-center gap-1.5">
 													<span
-														className={`relative inline-flex rounded-full h-2 w-2 ${
+														className={`relative flex h-2 w-2 ${isProcessing ? "animate-pulse" : ""}`}
+													>
+														<span
+															className={`relative inline-flex rounded-full h-2 w-2 ${
+																vid.status === "completed"
+																	? "bg-emerald-500"
+																	: vid.status === "failed"
+																		? "bg-rose-500"
+																		: "bg-amber-500"
+															}`}
+														/>
+													</span>
+													<span
+														className={`text-[9px] uppercase font-bold tracking-wider ${
 															vid.status === "completed"
-																? "bg-emerald-500"
+																? "text-emerald-400"
 																: vid.status === "failed"
-																	? "bg-rose-500"
-																	: "bg-amber-500"
+																	? "text-rose-400"
+																	: "text-amber-400"
 														}`}
-													/>
-												</span>
-												<span
-													className={`text-[9px] uppercase font-bold tracking-wider ${
-														vid.status === "completed"
-															? "text-emerald-400"
-															: vid.status === "failed"
-																? "text-rose-400"
-																: "text-amber-400"
-													}`}
-												>
-													{vid.status}
-												</span>
+													>
+														{vid.status}
+													</span>
+												</div>
 											</div>
 										</div>
-									</div>
-								);
-							})}
-						</div>
-					)}
-				</div>
+									);
+								})}
+							</div>
+						)}
+					</div>
+				</ScrollArea>
 				<Footer locale={locale} minimal />
 			</div>
 
@@ -324,55 +328,63 @@ export default function ControlDrawer({
 			</button>
 
 			{/* Custom Delete Confirmation Modal */}
-			{videoToDelete && (
-				<div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-					<div className="p-6 rounded-2xl max-w-md w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col gap-4 shadow-2xl transition-colors duration-300">
-						<div className="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-zinc-800">
-							<div className="flex items-center gap-2 text-red-500 font-sans">
-								<AlertTriangle className="w-5 h-5" />
-								<h2 className="text-md font-semibold text-zinc-800 dark:text-zinc-100">
-									{isRtl ? "حذف عقدة الفيديو" : "Delete Video Node"}
-								</h2>
+			<Dialog
+				open={videoToDelete !== null}
+				onOpenChange={(open) => !open && setVideoToDelete(null)}
+			>
+				<DialogContent
+					showCloseButton={false}
+					className="max-w-md p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-2xl flex flex-col gap-4"
+				>
+					{videoToDelete && (
+						<>
+							<div className="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-zinc-800">
+								<div className="flex items-center gap-2 text-red-500 font-sans">
+									<AlertTriangle className="w-5 h-5" />
+									<h2 className="text-md font-semibold text-zinc-800 dark:text-zinc-100">
+										{isRtl ? "حذف عقدة الفيديو" : "Delete Video Node"}
+									</h2>
+								</div>
+								<button
+									type="button"
+									onClick={() => setVideoToDelete(null)}
+									className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition"
+								>
+									<X className="w-4 h-4" />
+								</button>
 							</div>
-							<button
-								type="button"
-								onClick={() => setVideoToDelete(null)}
-								className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition"
-							>
-								<X className="w-4 h-4" />
-							</button>
-						</div>
 
-						<div className="text-xs text-zinc-700 dark:text-zinc-350 leading-relaxed flex flex-col gap-2">
-							<p>
-								{isRtl
-									? "هل أنت متأكد من حذف عقدة هذا الفيديو وجميع المتجهات الدلالية الخاصة بها؟"
-									: "Are you sure you want to delete this historical video node and all its semantic vectors?"}
-							</p>
-							<p className="font-mono bg-zinc-100 dark:bg-zinc-900 p-2 rounded text-zinc-650 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800/60 truncate">
-								{videoToDelete.title || videoToDelete.youtube_id}
-							</p>
-						</div>
+							<div className="text-xs text-zinc-700 dark:text-zinc-350 leading-relaxed flex flex-col gap-2 text-start">
+								<p>
+									{isRtl
+										? "هل أنت متأكد من حذف عقدة هذا الفيديو وجميع المتجهات الدلالية الخاصة بها؟"
+										: "Are you sure you want to delete this historical video node and all its semantic vectors?"}
+								</p>
+								<p className="font-mono bg-zinc-100 dark:bg-zinc-900 p-2 rounded text-zinc-650 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800/60 truncate">
+									{videoToDelete.title || videoToDelete.youtube_id}
+								</p>
+							</div>
 
-						<div className="flex gap-3 mt-2">
-							<button
-								type="button"
-								onClick={() => setVideoToDelete(null)}
-								className="flex-1 py-2 text-sm rounded-lg font-semibold border border-zinc-300 dark:border-zinc-850 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
-							>
-								{isRtl ? "إلغاء" : "Cancel"}
-							</button>
-							<button
-								type="button"
-								onClick={confirmDeleteVideo}
-								className="flex-1 py-2 text-sm rounded-lg font-semibold bg-red-600 hover:bg-red-700 text-white transition"
-							>
-								{isRtl ? "حذف" : "Delete"}
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
+							<div className="flex gap-3 mt-2">
+								<button
+									type="button"
+									onClick={() => setVideoToDelete(null)}
+									className="flex-1 py-2 text-sm rounded-lg font-semibold border border-zinc-300 dark:border-zinc-850 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+								>
+									{isRtl ? "إلغاء" : "Cancel"}
+								</button>
+								<button
+									type="button"
+									onClick={confirmDeleteVideo}
+									className="flex-1 py-2 text-sm rounded-lg font-semibold bg-red-600 hover:bg-red-700 text-white transition"
+								>
+									{isRtl ? "حذف" : "Delete"}
+								</button>
+							</div>
+						</>
+					)}
+				</DialogContent>
+			</Dialog>
 		</motion.div>
 	);
 }

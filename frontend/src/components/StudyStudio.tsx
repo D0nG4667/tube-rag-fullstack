@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
 	AlertTriangle,
 	BookOpen,
@@ -20,8 +19,12 @@ import {
 	Twitter,
 	Volume2,
 	VolumeX,
+	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type Locale, translations } from "@/lib/translations";
 import CustomMarkdown from "./CustomMarkdown";
 import SpotlightPanel from "./SpotlightPanel";
@@ -41,7 +44,6 @@ interface StudyStudioProps {
 	onToggleOpen: () => void;
 	locale?: string;
 	onApiKeyExpired?: () => void;
-	width?: number;
 	onShowToast?: (msg: string, type: "success" | "error" | "info") => void;
 }
 
@@ -76,7 +78,6 @@ export default function StudyStudio({
 	onToggleOpen,
 	locale = "en",
 	onApiKeyExpired,
-	width = 480,
 	onShowToast,
 }: StudyStudioProps) {
 	const t = translations[locale as Locale] || translations.en;
@@ -653,16 +654,11 @@ export default function StudyStudio({
 	};
 
 	return (
-		<motion.div
-			animate={{ width: isOpen ? width : 0 }}
-			transition={{ type: "spring", stiffness: 220, damping: 26 }}
-			className="h-full border-l border-zinc-200 dark:border-zinc-800/40 bg-white/80 dark:bg-zinc-950/40 backdrop-blur-2xl flex flex-col relative shrink-0 z-40 overflow-visible transition-colors duration-300"
-		>
+		<div className="h-full w-full border-l border-zinc-200 dark:border-zinc-800/40 bg-white/80 dark:bg-zinc-950/40 backdrop-blur-2xl flex flex-col relative shrink-0 z-40 overflow-visible transition-colors duration-300">
 			{/* Dynamic width Inner Container to prevent squishing text on width resize */}
 			<div
-				className="h-full flex flex-col overflow-hidden"
+				className="h-full w-full flex flex-col overflow-hidden"
 				style={{
-					width: `${width}px`,
 					opacity: isOpen ? 1 : 0,
 					pointerEvents: isOpen ? "auto" : "none",
 					transition: "opacity 0.2s ease-in-out",
@@ -677,688 +673,682 @@ export default function StudyStudio({
 						</span>
 					</div>
 
-					{/* Share CTAs Dropdown */}
-					<div className="relative">
-						<button
-							type="button"
-							onClick={() => setIsShareOpen(!isShareOpen)}
-							className="p-1.5 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors duration-300"
-							title={t.shareInsights}
-						>
-							<Share2 className="w-4 h-4" />
-						</button>
+					<div className="flex items-center gap-2">
+						{/* Share CTAs Dropdown */}
+						<div className="relative">
+							<button
+								type="button"
+								onClick={() => setIsShareOpen(!isShareOpen)}
+								className="p-1.5 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors duration-300"
+								title={t.shareInsights}
+							>
+								<Share2 className="w-4 h-4" />
+							</button>
 
-						{isShareOpen && (
-							<div className="absolute right-0 mt-2 w-48 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl p-1.5 flex flex-col gap-1 z-30 shadow-2xl transition-colors duration-300">
-								<button
-									type="button"
-									onClick={handleCopy}
-									className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-between text-zinc-700 dark:text-zinc-300 transition"
-								>
-									<span className="flex items-center gap-2">
-										<Copy className="w-3.5 h-3.5" />
-										{t.copyToClipboard}
-									</span>
-									{copied && <Check className="w-3 h-3 text-green-400" />}
-								</button>
-								<button
-									type="button"
-									onClick={() => {
-										const shareUrl =
-											typeof window !== "undefined" &&
-											!window.location.host.includes("localhost")
-												? window.location.href
-												: "https://tuberag.vercel.app";
-
-										let shareContext = "a comprehensive study outline";
-										if (activeTab === "podcast")
-											shareContext = "an interactive audio podcast script";
-										else if (activeTab === "mindmap")
-											shareContext = "an interconnected concept mindmap";
-										else if (activeTab === "notes")
-											shareContext = "handwritten calligraphy study notes";
-
-										const xText = `🧠 Synthesized ${shareContext} of "${videoTitle}" using TubeRAG!\n\nCheck it out here: ${shareUrl} 🚀\n\n#AI #SaaS #TubeRAG #NextJS #Gemini`;
-										const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(xText)}`;
-										window.open(url, "_blank");
-									}}
-									className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition"
-								>
-									<Twitter className="w-3.5 h-3.5 text-sky-400" />
-									{t.shareOnX}
-								</button>
-								<button
-									type="button"
-									onClick={() => {
-										const shareUrl =
-											typeof window !== "undefined" &&
-											!window.location.host.includes("localhost")
-												? window.location.href
-												: "https://tuberag.vercel.app";
-
-										let shareContext = "a comprehensive study outline";
-										if (activeTab === "podcast")
-											shareContext = "an interactive audio podcast script";
-										else if (activeTab === "mindmap")
-											shareContext = "an interconnected concept mindmap";
-										else if (activeTab === "notes")
-											shareContext = "handwritten calligraphy study notes";
-
-										const linkedinText = `🚀 Just generated ${shareContext} of "${videoTitle}" using TubeRAG!\n\nTubeRAG synthesizes complex lectures and playlists into structured learning assets:\n📝 Multi-document semantic outline\n🎙️ Interactive audio podcast dialogue\n🧠 Interconnected visual concept maps\n\nPowered by Gemini 2.5 Flash & Supabase pgvector.\n\nExplore the project: https://github.com/tuberag\n\n#ArtificialIntelligence #SaaS #Productivity #EdTech #RAG`;
-
-										navigator.clipboard
-											.writeText(linkedinText)
-											.then(() => {
-												setLinkedinCopied(true);
-												setTimeout(() => setLinkedinCopied(false), 2000);
-											})
-											.catch(() => {});
-
-										const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
-										window.open(url, "_blank");
-									}}
-									className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-between text-zinc-700 dark:text-zinc-300 transition"
-								>
-									<span className="flex items-center gap-2">
-										<Linkedin className="w-3.5 h-3.5 text-blue-500" />
-										{t.shareOnLinkedIn}
-									</span>
-									{linkedinCopied && (
-										<Check className="w-3 h-3 text-green-400" />
-									)}
-								</button>
-
-								{/* Dynamic Tab Download Options */}
-								{activeTab === "outline" && outline && (
+							{isShareOpen && (
+								<div className="absolute right-0 mt-2 w-48 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl p-1.5 flex flex-col gap-1 z-30 shadow-2xl transition-colors duration-300">
 									<button
 										type="button"
-										onClick={downloadOutline}
-										className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
+										onClick={handleCopy}
+										className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-between text-zinc-700 dark:text-zinc-300 transition"
 									>
-										<Download className="w-3.5 h-3.5 text-cyan-400" />
-										Download Markdown (.md)
+										<span className="flex items-center gap-2">
+											<Copy className="w-3.5 h-3.5" />
+											{t.copyToClipboard}
+										</span>
+										{copied && <Check className="w-3 h-3 text-green-400" />}
 									</button>
-								)}
-								{activeTab === "podcast" && podcastAudioUrl && (
 									<button
 										type="button"
-										onClick={downloadPodcastAudio}
-										className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
+										onClick={() => {
+											const shareUrl =
+												typeof window !== "undefined" &&
+												!window.location.host.includes("localhost")
+													? window.location.href
+													: "https://tuberag.vercel.app";
+
+											let shareContext = "a comprehensive study outline";
+											if (activeTab === "podcast")
+												shareContext = "an interactive audio podcast script";
+											else if (activeTab === "mindmap")
+												shareContext = "an interconnected concept mindmap";
+											else if (activeTab === "notes")
+												shareContext = "handwritten calligraphy study notes";
+
+											const xText = `🧠 Synthesized ${shareContext} of "${videoTitle}" using TubeRAG!\n\nCheck it out here: ${shareUrl} 🚀\n\n#AI #SaaS #TubeRAG #NextJS #Gemini`;
+											const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(xText)}`;
+											window.open(url, "_blank");
+										}}
+										className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition"
 									>
-										<Download className="w-3.5 h-3.5 text-cyan-400" />
-										Download Audio (.wav)
+										<Twitter className="w-3.5 h-3.5 text-sky-400" />
+										{t.shareOnX}
 									</button>
-								)}
-								{activeTab === "mindmap" && mindmap && (
 									<button
 										type="button"
-										onClick={downloadMindmapSvg}
-										className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
+										onClick={() => {
+											const shareUrl =
+												typeof window !== "undefined" &&
+												!window.location.host.includes("localhost")
+													? window.location.href
+													: "https://tuberag.vercel.app";
+
+											let shareContext = "a comprehensive study outline";
+											if (activeTab === "podcast")
+												shareContext = "an interactive audio podcast script";
+											else if (activeTab === "mindmap")
+												shareContext = "an interconnected concept mindmap";
+											else if (activeTab === "notes")
+												shareContext = "handwritten calligraphy study notes";
+
+											const linkedinText = `🚀 Just generated ${shareContext} of "${videoTitle}" using TubeRAG!\n\nTubeRAG synthesizes complex lectures and playlists into structured learning assets:\n📝 Multi-document semantic outline\n🎙️ Interactive audio podcast dialogue\n🧠 Interconnected visual concept maps\n\nPowered by Gemini 2.5 Flash & Supabase pgvector.\n\nExplore the project: https://github.com/tuberag\n\n#ArtificialIntelligence #SaaS #Productivity #EdTech #RAG`;
+
+											navigator.clipboard
+												.writeText(linkedinText)
+												.then(() => {
+													setLinkedinCopied(true);
+													setTimeout(() => setLinkedinCopied(false), 2000);
+												})
+												.catch(() => {});
+
+											const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+											window.open(url, "_blank");
+										}}
+										className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-between text-zinc-700 dark:text-zinc-300 transition"
 									>
-										<Download className="w-3.5 h-3.5 text-cyan-400" />
-										Download SVG Map (.svg)
+										<span className="flex items-center gap-2">
+											<Linkedin className="w-3.5 h-3.5 text-blue-500" />
+											{t.shareOnLinkedIn}
+										</span>
+										{linkedinCopied && (
+											<Check className="w-3 h-3 text-green-400" />
+										)}
 									</button>
-								)}
-								{activeTab === "notes" && notes && (
-									<>
+
+									{/* Dynamic Tab Download Options */}
+									{activeTab === "outline" && outline && (
 										<button
 											type="button"
-											onClick={downloadNotesAsImage}
+											onClick={downloadOutline}
 											className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
 										>
 											<Download className="w-3.5 h-3.5 text-cyan-400" />
-											Download Notes Image (.png)
+											Download Markdown (.md)
 										</button>
+									)}
+									{activeTab === "podcast" && podcastAudioUrl && (
 										<button
 											type="button"
-											onClick={downloadNotesAsText}
-											className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition"
+											onClick={downloadPodcastAudio}
+											className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
 										>
-											<Download className="w-3.5 h-3.5 text-purple-400" />
-											Download Notes Text (.txt)
+											<Download className="w-3.5 h-3.5 text-cyan-400" />
+											Download Audio (.wav)
 										</button>
-									</>
-								)}
+									)}
+									{activeTab === "mindmap" && mindmap && (
+										<button
+											type="button"
+											onClick={downloadMindmapSvg}
+											className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
+										>
+											<Download className="w-3.5 h-3.5 text-cyan-400" />
+											Download SVG Map (.svg)
+										</button>
+									)}
+									{activeTab === "notes" && notes && (
+										<>
+											<button
+												type="button"
+												onClick={downloadNotesAsImage}
+												className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
+											>
+												<Download className="w-3.5 h-3.5 text-cyan-400" />
+												Download Notes Image (.png)
+											</button>
+											<button
+												type="button"
+												onClick={downloadNotesAsText}
+												className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition"
+											>
+												<Download className="w-3.5 h-3.5 text-purple-400" />
+												Download Notes Text (.txt)
+											</button>
+										</>
+									)}
 
-								<button
-									type="button"
-									onClick={() => {
-										printActiveTab();
-										setIsShareOpen(false);
-									}}
-									className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
-								>
-									<PenTool className="w-3.5 h-3.5 text-emerald-400" />
-									{t.downloadPdf}
-								</button>
-							</div>
-						)}
+									<button
+										type="button"
+										onClick={() => {
+											printActiveTab();
+											setIsShareOpen(false);
+										}}
+										className="w-full text-start px-3 py-1.5 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 transition border-t border-zinc-200/10 mt-1 pt-1.5"
+									>
+										<PenTool className="w-3.5 h-3.5 text-emerald-400" />
+										{t.downloadPdf}
+									</button>
+								</div>
+							)}
+						</div>
+
+						{/* Close Panel Button */}
+						<button
+							type="button"
+							onClick={onToggleOpen}
+							className="p-1.5 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors duration-300"
+							title={locale === "ar" ? "إغلاق" : "Close"}
+						>
+							<X className="w-4 h-4" />
+						</button>
 					</div>
 				</div>
 
-				{/* Sub-tab selection */}
-				<div className="flex border-b border-zinc-200 dark:border-zinc-800/40 p-1 bg-zinc-100/50 dark:bg-zinc-950/30 gap-1 shrink-0">
-					<button
-						type="button"
-						onClick={() => {
-							setActiveTab("outline");
-							setIsShareOpen(false);
-						}}
-						className={`flex-1 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
-							activeTab === "outline"
-								? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-								: "text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200"
-						}`}
-					>
-						<BookOpen className="w-3.5 h-3.5" />
-						{t.outlineTab}
-					</button>
-					<button
-						type="button"
-						onClick={() => {
-							setActiveTab("podcast");
-							setIsShareOpen(false);
-						}}
-						className={`flex-1 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
-							activeTab === "podcast"
-								? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-								: "text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200"
-						}`}
-					>
-						<Radio className="w-3.5 h-3.5" />
-						{t.podcastTab}
-					</button>
-					<button
-						type="button"
-						onClick={() => {
-							setActiveTab("mindmap");
-							setIsShareOpen(false);
-						}}
-						className={`flex-1 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
-							activeTab === "mindmap"
-								? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-								: "text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200"
-						}`}
-					>
-						<Network className="w-3.5 h-3.5" />
-						{t.conceptMapTab}
-					</button>
-					<button
-						type="button"
-						onClick={() => {
-							setActiveTab("notes");
-							setIsShareOpen(false);
-						}}
-						className={`flex-1 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
-							activeTab === "notes"
-								? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-								: "text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200"
-						}`}
-					>
-						<PenTool className="w-3.5 h-3.5" />
-						{t.notesTab}
-					</button>
-				</div>
+				{/* Tabs Root */}
+				<Tabs
+					value={activeTab}
+					onValueChange={(val) => {
+						setActiveTab(val as TabType);
+						setIsShareOpen(false);
+					}}
+					className="flex-grow flex flex-col min-h-0"
+				>
+					{/* Sub-tab selection */}
+					<TabsList className="w-full flex border-b border-zinc-200 dark:border-zinc-800/40 p-1 bg-zinc-100/50 dark:bg-zinc-950/30 gap-1 shrink-0 rounded-none bg-transparent">
+						<TabsTrigger
+							value="outline"
+							className={`flex-1 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition data-active:!bg-cyan-500/10 data-active:!text-cyan-700 dark:data-active:!text-cyan-400 data-active:!border data-active:!border-cyan-500/20 text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200`}
+						>
+							<BookOpen className="w-3.5 h-3.5" />
+							{t.outlineTab}
+						</TabsTrigger>
+						<TabsTrigger
+							value="podcast"
+							className={`flex-1 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition data-active:!bg-cyan-500/10 data-active:!text-cyan-700 dark:data-active:!text-cyan-400 data-active:!border data-active:!border-cyan-500/20 text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200`}
+						>
+							<Radio className="w-3.5 h-3.5" />
+							{t.podcastTab}
+						</TabsTrigger>
+						<TabsTrigger
+							value="mindmap"
+							className={`flex-1 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition data-active:!bg-cyan-500/10 data-active:!text-cyan-700 dark:data-active:!text-cyan-400 data-active:!border data-active:!border-cyan-500/20 text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200`}
+						>
+							<Network className="w-3.5 h-3.5" />
+							{t.conceptMapTab}
+						</TabsTrigger>
+						<TabsTrigger
+							value="notes"
+							className={`flex-1 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition data-active:!bg-cyan-500/10 data-active:!text-cyan-700 dark:data-active:!text-cyan-400 data-active:!border data-active:!border-cyan-500/20 text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200`}
+						>
+							<PenTool className="w-3.5 h-3.5" />
+							{t.notesTab}
+						</TabsTrigger>
+					</TabsList>
 
-				{/* Scrollable View Area */}
-				<div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 min-h-0">
-					{/* Tab 1: Presentation Outline */}
-					{activeTab === "outline" && (
-						<div className="flex flex-col gap-4 h-full">
-							{!outline && !loadingOutline && (
-								<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">
-									<BookOpen className="w-8 h-8 text-zinc-600 mb-2" />
-									<span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">
-										{t.noOutline}
-									</span>
-									<button
-										type="button"
-										onClick={generateOutline}
-										className="px-4 py-2 rounded-lg bg-accent-cyan/90 hover:bg-accent-cyan text-zinc-950 text-xs font-bold transition shadow-lg"
-									>
-										{t.generateOutlineBtn}
-									</button>
-								</div>
-							)}
-
-							{loadingOutline && (
-								<div className="flex-1 flex flex-col items-center justify-center gap-2">
-									<Loader2 className="w-6 h-6 text-accent-cyan animate-spin" />
-									<span className="text-xs text-zinc-500 font-medium">
-										Synthesizing outline from transcript...
-									</span>
-								</div>
-							)}
-
-							{outline && !loadingOutline && (
-								<SpotlightPanel className="flex-1 p-4 rounded-xl flex flex-col min-h-0 overflow-y-auto">
-									<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold mb-3 border-b border-zinc-800/60 pb-1.5 block">
-										{t.outlineTab}
-									</span>
-									<div className="text-xs text-zinc-700 dark:text-zinc-300 font-sans scrollbar-thin">
-										<CustomMarkdown
-											content={outline}
-											onSeek={onSeek}
-											isRtl={isRtl}
-										/>
-									</div>
-								</SpotlightPanel>
-							)}
-						</div>
-					)}
-
-					{/* Tab 2: Audio overview podcast script */}
-					{activeTab === "podcast" && (
-						<div className="flex flex-col gap-4 h-full">
-							{podcastScript.length === 0 && !loadingPodcast && (
-								<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">
-									<Radio className="w-8 h-8 text-zinc-600 mb-2" />
-									<span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">
-										{t.noPodcast}
-									</span>
-									{podcastScriptError && (
-										<div className="p-3 rounded-lg border border-red-500/20 bg-red-950/15 text-red-400 text-xs font-semibold animate-fade-in shadow-[0_0_12px_rgba(239,68,68,0.15)] mb-4 flex items-start gap-2 max-w-sm text-start">
-											<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-											<span>{podcastScriptError}</span>
+					{/* View Area Content */}
+					<div className="flex-1 min-h-0 flex flex-col relative">
+						{/* Tab 1: Presentation Outline */}
+						<TabsContent
+							value="outline"
+							className="absolute inset-0 flex flex-col outline-none"
+						>
+							<ScrollArea className="flex-grow">
+								<div className="p-4 flex flex-col gap-4">
+									{!outline && !loadingOutline && (
+										<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">
+											<BookOpen className="w-8 h-8 text-zinc-600 mb-2" />
+											<span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">
+												{t.noOutline}
+											</span>
+											<button
+												type="button"
+												onClick={generateOutline}
+												className="px-4 py-2 rounded-lg bg-accent-cyan/90 hover:bg-accent-cyan text-zinc-950 text-xs font-bold transition shadow-lg"
+											>
+												{t.generateOutlineBtn}
+											</button>
 										</div>
 									)}
-									<button
-										type="button"
-										onClick={generatePodcastScript}
-										className="px-4 py-2 rounded-lg bg-accent-cyan/90 hover:bg-accent-cyan text-zinc-950 text-xs font-bold transition shadow-lg"
-									>
-										{t.generatePodcastBtn}
-									</button>
-								</div>
-							)}
 
-							{loadingPodcast && (
-								<div className="flex-1 flex flex-col items-center justify-center gap-2">
-									<Loader2 className="w-6 h-6 text-accent-cyan animate-spin" />
-									<span className="text-xs text-zinc-500 font-medium">
-										Drafting host discussion...
-									</span>
-								</div>
-							)}
-
-							{podcastScript.length > 0 && !loadingPodcast && (
-								<div className="flex-1 flex flex-col gap-4 min-h-0">
-									{/* biome-ignore lint/a11y/useMediaCaption: custom audio player without caption tracks */}
-									<audio
-										ref={audioRef}
-										src={podcastAudioUrl || undefined}
-										onPlay={() => setIsPlayingPodcast(true)}
-										onPause={() => setIsPlayingPodcast(false)}
-										onEnded={() => {
-											setIsPlayingPodcast(false);
-											setCurrentPodcastIndex(-1);
-											setCurrentTime(0);
-										}}
-										onTimeUpdate={() => {
-											if (audioRef.current) {
-												setCurrentTime(audioRef.current.currentTime);
-											}
-										}}
-										onDurationChange={() => {
-											if (audioRef.current) {
-												setDuration(audioRef.current.duration);
-											}
-										}}
-										onLoadedMetadata={() => {
-											if (audioRef.current) {
-												setDuration(audioRef.current.duration);
-											}
-										}}
-										className="hidden"
-									/>
-
-									{/* Sleek, full-featured audio player interface */}
-									<div className="flex flex-col gap-2.5 p-4 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-lg shrink-0">
-										<div className="flex items-center justify-between">
-											<div className="flex flex-col">
-												<span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-													🎙️ {t.audioOverviewDiscussion}
-													{isPlayingPodcast && (
-														<span className="flex items-center gap-0.5 h-2.5">
-															<span className="w-0.5 h-1.5 bg-accent-cyan rounded animate-bounce [animation-delay:0.1s]" />
-															<span className="w-0.5 h-2.5 bg-accent-cyan rounded animate-bounce [animation-delay:0.2s]" />
-															<span className="w-0.5 h-2 bg-accent-cyan rounded animate-bounce [animation-delay:0.3s]" />
-														</span>
-													)}
-												</span>
-												<span className="text-[10px] text-zinc-500 font-mono mt-0.5">
-													{loadingAudio
-														? locale === "ar"
-															? "جاري توليد الصوت الطبيعي..."
-															: "Generating natural audio..."
-														: isPlayingPodcast
-															? locale === "ar"
-																? "جاري تشغيل الصوت الطبيعي"
-																: "Playing natural Gemini voiceover"
-															: podcastAudioUrl
-																? locale === "ar"
-																	? "الصوت جاهز للتشغيل"
-																	: "Audio generated & ready"
-																: t.audioPlayerReady}
-												</span>
-											</div>
+									{loadingOutline && (
+										<div className="flex-1 flex flex-col items-center justify-center gap-2 py-12">
+											<Loader2 className="w-6 h-6 text-accent-cyan animate-spin" />
+											<span className="text-xs text-zinc-500 font-medium">
+												Synthesizing outline from transcript...
+											</span>
 										</div>
+									)}
 
-										{/* Progress Slider */}
-										{podcastAudioUrl && (
-											<div className="flex items-center gap-3 mt-1.5">
-												<span className="text-[9px] font-mono text-zinc-500 w-8 text-right select-none">
-													{formatTime(Math.floor(currentTime))}
-												</span>
-												<input
-													type="range"
-													min={0}
-													max={duration || 100}
-													value={currentTime}
-													onChange={handleAudioSeek}
-													className="flex-1 h-1 bg-zinc-300 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-accent-cyan focus:outline-none"
+									{outline && !loadingOutline && (
+										<SpotlightPanel className="flex-1 p-4 rounded-xl flex flex-col min-h-0">
+											<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold mb-3 border-b border-zinc-800/60 pb-1.5 block">
+												{t.outlineTab}
+											</span>
+											<div className="text-xs text-zinc-700 dark:text-zinc-300 font-sans">
+												<CustomMarkdown
+													content={outline}
+													onSeek={onSeek}
+													isRtl={isRtl}
 												/>
-												<span className="text-[9px] font-mono text-zinc-500 w-8 select-none">
-													{formatTime(Math.floor(duration))}
-												</span>
 											</div>
-										)}
+										</SpotlightPanel>
+									)}
+								</div>
+							</ScrollArea>
+						</TabsContent>
 
-										{/* Controls Row */}
-										<div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-200/50 dark:border-zinc-850/40">
-											<div className="flex items-center gap-2">
-												<button
-													type="button"
-													onClick={() => {
-														setIsMuted(!isMuted);
-														if (audioRef.current) {
-															audioRef.current.muted = !isMuted;
-														}
-													}}
-													className="p-2 rounded bg-zinc-250 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700/80 transition text-zinc-650 dark:text-zinc-300"
-													title={isMuted ? "Unmute" : "Mute"}
-												>
-													{isMuted ? (
-														<VolumeX className="w-4 h-4" />
-													) : (
-														<Volume2 className="w-4 h-4" />
-													)}
-												</button>
+						{/* Tab 2: Podcast Script */}
+						<TabsContent
+							value="podcast"
+							className="absolute inset-0 flex flex-col outline-none"
+						>
+							<ScrollArea className="flex-grow">
+								<div className="p-4 flex flex-col gap-4">
+									{!podcastScript.length && !loadingPodcast && (
+										<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">
+											<Radio className="w-8 h-8 text-zinc-600 mb-2" />
+											<span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">
+												{t.noPodcast}
+											</span>
+											{podcastScriptError && (
+												<div className="p-3 rounded-lg border border-red-500/20 bg-red-950/15 text-red-400 text-xs font-semibold animate-fade-in shadow-[0_0_12px_rgba(239,68,68,0.15)] mb-4 flex items-start gap-2 max-w-sm text-start">
+													<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+													<span>{podcastScriptError}</span>
+												</div>
+											)}
+											<button
+												type="button"
+												onClick={generatePodcastScript}
+												className="px-4 py-2 rounded-lg bg-accent-cyan/90 hover:bg-accent-cyan text-zinc-950 text-xs font-bold transition shadow-lg"
+											>
+												{t.generatePodcastBtn}
+											</button>
+										</div>
+									)}
 
+									{loadingPodcast && (
+										<div className="flex-1 flex flex-col items-center justify-center gap-2 py-12">
+											<Loader2 className="w-6 h-6 text-accent-cyan animate-spin" />
+											<span className="text-xs text-zinc-500 font-medium">
+												Synthesizing dialogue scripts from topics...
+											</span>
+										</div>
+									)}
+
+									{podcastScript.length > 0 && !loadingPodcast && (
+										<div className="flex flex-col gap-4 animate-fade-in">
+											{/* biome-ignore lint/a11y/useMediaCaption: custom audio player without caption tracks */}
+											<audio
+												ref={audioRef}
+												src={podcastAudioUrl || undefined}
+												onPlay={() => setIsPlayingPodcast(true)}
+												onPause={() => setIsPlayingPodcast(false)}
+												onEnded={() => {
+													setIsPlayingPodcast(false);
+													setCurrentPodcastIndex(-1);
+													setCurrentTime(0);
+												}}
+												onTimeUpdate={() => {
+													if (audioRef.current) {
+														setCurrentTime(audioRef.current.currentTime);
+													}
+												}}
+												onDurationChange={() => {
+													if (audioRef.current) {
+														setDuration(audioRef.current.duration);
+													}
+												}}
+												onLoadedMetadata={() => {
+													if (audioRef.current) {
+														setDuration(audioRef.current.duration);
+													}
+												}}
+												className="hidden"
+											/>
+											<div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800/40 bg-zinc-100/60 dark:bg-zinc-950/40 flex flex-col gap-3 shrink-0">
+												<div className="flex justify-between items-center">
+													<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
+														{t.audioOverviewDiscussion}
+													</span>
+													<div className="flex items-center gap-1">
+														<span className="w-1.5 h-1.5 rounded-full bg-accent-cyan animate-pulse" />
+														<span className="text-[9px] uppercase font-bold text-accent-cyan">
+															Gemini TTS
+														</span>
+													</div>
+												</div>
+
+												{/* Native Audio Concatenation Player API UI wrapper */}
 												{podcastAudioUrl && (
+													<div className="flex items-center gap-2 bg-zinc-200/40 dark:bg-zinc-900/60 px-3 py-1.5 rounded border border-zinc-300 dark:border-zinc-850/60 shrink-0">
+														<span className="text-[9px] font-mono text-zinc-500 w-8 select-none">
+															{formatTime(Math.floor(currentTime))}
+														</span>
+														<input
+															type="range"
+															min={0}
+															max={duration || 100}
+															value={currentTime}
+															onChange={handleAudioSeek}
+															className="flex-1 h-1 bg-zinc-300 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-accent-cyan focus:outline-none"
+														/>
+														<span className="text-[9px] font-mono text-zinc-500 w-8 select-none">
+															{formatTime(Math.floor(duration))}
+														</span>
+													</div>
+												)}
+
+												{/* Controls Row */}
+												<div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-200/50 dark:border-zinc-850/40">
+													<div className="flex items-center gap-2">
+														<button
+															type="button"
+															onClick={() => {
+																setIsMuted(!isMuted);
+																if (audioRef.current) {
+																	audioRef.current.muted = !isMuted;
+																}
+															}}
+															className="p-2 rounded bg-zinc-250 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700/80 transition text-zinc-650 dark:text-zinc-300"
+															title={isMuted ? "Unmute" : "Mute"}
+														>
+															{isMuted ? (
+																<VolumeX className="w-4 h-4" />
+															) : (
+																<Volume2 className="w-4 h-4" />
+															)}
+														</button>
+
+														{podcastAudioUrl && (
+															<button
+																type="button"
+																onClick={downloadPodcastAudio}
+																className="p-2 rounded bg-zinc-250 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700/80 transition text-zinc-650 dark:text-zinc-300"
+																title="Download Audio"
+															>
+																<Download className="w-4 h-4" />
+															</button>
+														)}
+													</div>
+
 													<button
 														type="button"
-														onClick={downloadPodcastAudio}
-														className="p-2 rounded bg-zinc-250 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700/80 transition text-zinc-650 dark:text-zinc-300"
-														title="Download Audio"
+														onClick={handlePlayPodcastAudio}
+														disabled={loadingAudio}
+														className="p-2.5 rounded-full bg-accent-cyan text-zinc-950 hover:scale-105 transition flex items-center justify-center disabled:opacity-50"
 													>
-														<Download className="w-4 h-4" />
+														{loadingAudio ? (
+															<Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
+														) : isPlayingPodcast ? (
+															<Pause className="w-4 h-4 fill-zinc-950" />
+														) : (
+															<Play className="w-4 h-4 fill-zinc-950" />
+														)}
 													</button>
-												)}
+												</div>
 											</div>
 
-											<button
-												type="button"
-												onClick={handlePlayPodcastAudio}
-												disabled={loadingAudio}
-												className="p-2.5 rounded-full bg-accent-cyan text-zinc-950 hover:scale-105 transition flex items-center justify-center disabled:opacity-50"
-											>
-												{loadingAudio ? (
-													<Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
-												) : isPlayingPodcast ? (
-													<Pause className="w-4 h-4 fill-zinc-950" />
-												) : (
-													<Play className="w-4 h-4 fill-zinc-950" />
-												)}
-											</button>
-										</div>
-									</div>
-
-									{audioError && (
-										<div className="p-3 rounded-lg border border-red-500/20 bg-red-950/15 text-red-400 text-xs font-semibold animate-fade-in shadow-[0_0_12px_rgba(239,68,68,0.1)] flex items-start gap-2">
-											<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-											<span>{audioError}</span>
-										</div>
-									)}
-
-									{/* Script Scrollable Area */}
-									<div className="flex-1 overflow-y-auto flex flex-col gap-3 pr-1 scrollbar-thin">
-										{podcastScript.map((turn, i) => {
-											const isActivelySpoken = i === currentPodcastIndex;
-											const isHostA = turn.host === "Host A";
-											const keyVal = `${i}-${turn.host}`;
-											return (
-												<div
-													key={keyVal}
-													className={`p-3 rounded-lg border text-xs leading-relaxed transition-all duration-300 flex flex-col gap-1.5 ${
-														isActivelySpoken
-															? "bg-accent-cyan/10 border-accent-cyan/60 shadow-[0_0_12px_rgba(6,182,212,0.15)]"
-															: isHostA
-																? "bg-zinc-100/60 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-850 text-zinc-700 dark:text-zinc-300"
-																: "bg-zinc-50/40 dark:bg-zinc-900/10 border-zinc-200 dark:border-zinc-900 text-zinc-650 dark:text-zinc-400"
-													}`}
-												>
-													<span
-														className={`text-[9px] uppercase tracking-wider font-bold ${
-															isActivelySpoken
-																? "text-accent-cyan"
-																: isHostA
-																	? "text-cyan-400"
-																	: "text-violet-400"
-														}`}
-													>
-														🎙️ {turn.host}
-													</span>
-													<span>{turn.text}</span>
+											{audioError && (
+												<div className="p-3 rounded-lg border border-red-500/20 bg-red-950/15 text-red-400 text-xs font-semibold animate-fade-in shadow-[0_0_12px_rgba(239,68,68,0.1)] flex items-start gap-2">
+													<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+													<span>{audioError}</span>
 												</div>
-											);
-										})}
-									</div>
-								</div>
-							)}
-						</div>
-					)}
+											)}
 
-					{/* Tab 3: SVG Interactive Mindmap */}
-					{activeTab === "mindmap" && (
-						<div className="flex flex-col gap-4 h-full">
-							{!mindmap && !loadingMindmap && (
-								<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">
-									<Network className="w-8 h-8 text-zinc-600 mb-2" />
-									<span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">
-										{t.noMindmap}
-									</span>
-									{mindmapError && (
-										<div className="p-3 rounded-lg border border-red-500/20 bg-red-950/15 text-red-400 text-xs font-semibold animate-fade-in shadow-[0_0_12px_rgba(239,68,68,0.15)] mb-4 flex items-start gap-2 max-w-sm text-start">
-											<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-											<span>{mindmapError}</span>
-										</div>
-									)}
-									<button
-										type="button"
-										onClick={generateMindmap}
-										className="px-4 py-2 rounded-lg bg-accent-cyan/90 hover:bg-accent-cyan text-zinc-950 text-xs font-bold transition shadow-lg"
-									>
-										{t.generateMindmapBtn}
-									</button>
-								</div>
-							)}
-
-							{loadingMindmap && (
-								<div className="flex-1 flex flex-col items-center justify-center gap-2">
-									<Loader2 className="w-6 h-6 text-accent-cyan animate-spin" />
-									<span className="text-xs text-zinc-500 font-medium">
-										Mapping clusters and timestamp paths...
-									</span>
-								</div>
-							)}
-
-							{mindmap && !loadingMindmap && (
-								<div className="flex-1 flex flex-col gap-4 min-h-0 relative animate-fade-in">
-									<div className="flex items-center justify-between border-b border-zinc-800/60 pb-1.5 shrink-0">
-										<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
-											{t.conceptMapTab}
-										</span>
-										<div className="flex items-center gap-1.5">
-											<button
-												type="button"
-												onClick={downloadMindmapSvg}
-												className="px-2 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold transition flex items-center gap-1"
-												title="Download SVG Map"
-											>
-												<Download className="w-3 h-3" />
-												SVG
-											</button>
-											<button
-												type="button"
-												onClick={() => setIsFullscreenMindmap(true)}
-												className="px-2 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold transition flex items-center gap-1"
-											>
-												<Network className="w-3 h-3" />
-												{t.fullscreenGraph}
-											</button>
-										</div>
-									</div>
-
-									<div className="flex-1 overflow-y-auto flex flex-col gap-4 pr-1 relative ps-6 scrollbar-thin">
-										{/* Directory style connector line */}
-										<div className="absolute start-3 top-4 bottom-8 w-0.5 bg-zinc-800" />
-
-										{/* Root Node */}
-										<div className="p-3 rounded-lg border border-cyan-500/20 bg-cyan-950/15 text-cyan-300 text-xs font-bold shadow relative">
-											<div className="absolute start-[-16px] top-1/2 -translate-y-1/2 w-4 h-0.5 bg-zinc-800" />
-											🧠 {mindmap.subject}
-										</div>
-
-										{/* Branch Nodes */}
-										{mindmap.branches.map((branch) => (
-											<div
-												key={branch.title}
-												className="flex flex-col gap-2 ps-4 relative"
-											>
-												{/* Connect branch to parent line */}
-												<div className="absolute start-[-12px] top-4 w-3.5 h-0.5 bg-zinc-800" />
-
-												<div className="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-850 dark:text-zinc-200 text-xs font-semibold relative">
-													📂 {branch.title}
-												</div>
-
-												{/* Leaf Nodes */}
-												<div className="flex flex-col gap-1.5 ps-4 relative">
-													<div className="absolute start-[-12px] top-0 bottom-4 w-0.5 bg-zinc-800" />
-
-													{branch.leaves.map((leaf, li) => {
-														const leafKey = `${li}-${leaf.text}`;
-														return (
-															<button
-																key={leafKey}
-																type="button"
-																onClick={() => onSeek(leaf.seconds)}
-																className="w-full text-start p-2 rounded border border-zinc-200 dark:border-zinc-850/60 bg-zinc-50/40 dark:bg-zinc-950/40 text-zinc-650 dark:text-zinc-400 hover:text-zinc-850 dark:hover:text-zinc-200 hover:border-zinc-400 dark:hover:border-zinc-700 text-[11px] transition flex items-start gap-2 relative group"
+											{/* Script List */}
+											<div className="flex flex-col gap-3 pr-1">
+												{podcastScript.map((turn, i) => {
+													const isActivelySpoken = i === currentPodcastIndex;
+													const isHostA = turn.host === "Host A";
+													const keyVal = `${i}-${turn.host}`;
+													return (
+														<div
+															key={keyVal}
+															className={`p-3 rounded-lg border text-xs leading-relaxed transition-all duration-300 flex flex-col gap-1.5 ${
+																isActivelySpoken
+																	? "bg-accent-cyan/10 border-accent-cyan/60 shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+																	: isHostA
+																		? "bg-zinc-100/60 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-850 text-zinc-700 dark:text-zinc-300"
+																		: "bg-zinc-50/40 dark:bg-zinc-900/10 border-zinc-200 dark:border-zinc-900 text-zinc-650 dark:text-zinc-400"
+															}`}
+														>
+															<span
+																className={`text-[9px] uppercase tracking-wider font-bold ${
+																	isActivelySpoken
+																		? "text-accent-cyan"
+																		: isHostA
+																			? "text-cyan-400"
+																			: "text-violet-400"
+																}`}
 															>
-																<div className="absolute start-[-16px] top-1/2 -translate-y-1/2 w-4 h-0.5 bg-zinc-800" />
-																<span className="text-accent-cyan group-hover:scale-105 transition font-mono shrink-0">
-																	🏷️
-																</span>
-																<div className="flex-1 flex flex-col gap-0.5">
-																	<span>{leaf.text}</span>
-																	<span className="text-[9px] text-zinc-500 font-mono">
-																		{t.seekPlaybackTo}{" "}
-																		{formatTime(leaf.seconds)}
+																🎙️ {turn.host}
+															</span>
+															<span>{turn.text}</span>
+														</div>
+													);
+												})}
+											</div>
+										</div>
+									)}
+								</div>
+							</ScrollArea>
+						</TabsContent>
+
+						{/* Tab 3: SVG Interactive Mindmap */}
+						<TabsContent
+							value="mindmap"
+							className="absolute inset-0 flex flex-col outline-none"
+						>
+							<ScrollArea className="flex-grow">
+								<div className="p-4 flex flex-col gap-4">
+									{!mindmap && !loadingMindmap && (
+										<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">
+											<Network className="w-8 h-8 text-zinc-600 mb-2" />
+											<span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">
+												{t.noMindmap}
+											</span>
+											{mindmapError && (
+												<div className="p-3 rounded-lg border border-red-500/20 bg-red-950/15 text-red-400 text-xs font-semibold animate-fade-in shadow-[0_0_12px_rgba(239,68,68,0.15)] mb-4 flex items-start gap-2 max-w-sm text-start">
+													<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+													<span>{mindmapError}</span>
+												</div>
+											)}
+											<button
+												type="button"
+												onClick={generateMindmap}
+												className="px-4 py-2 rounded-lg bg-accent-cyan/90 hover:bg-accent-cyan text-zinc-950 text-xs font-bold transition shadow-lg"
+											>
+												{t.generateMindmapBtn}
+											</button>
+										</div>
+									)}
+
+									{loadingMindmap && (
+										<div className="flex-1 flex flex-col items-center justify-center gap-2 py-12">
+											<Loader2 className="w-6 h-6 text-accent-cyan animate-spin" />
+											<span className="text-xs text-zinc-500 font-medium">
+												Mapping clusters and timestamp paths...
+											</span>
+										</div>
+									)}
+
+									{mindmap && !loadingMindmap && (
+										<div className="flex-grow flex flex-col gap-4 min-h-0 relative animate-fade-in ps-6">
+											<div className="flex items-center justify-between border-b border-zinc-800/60 pb-1.5 shrink-0">
+												<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
+													{t.conceptMapTab}
+												</span>
+												<div className="flex items-center gap-1.5">
+													<button
+														type="button"
+														onClick={downloadMindmapSvg}
+														className="px-2 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold transition flex items-center gap-1"
+														title="Download SVG Map"
+													>
+														<Download className="w-3 h-3" />
+														SVG
+													</button>
+													<button
+														type="button"
+														onClick={() => setIsFullscreenMindmap(true)}
+														className="px-2 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold transition flex items-center gap-1"
+													>
+														<Network className="w-3 h-3" />
+														{t.fullscreenGraph}
+													</button>
+												</div>
+											</div>
+
+											{/* Directory style connector line */}
+											<div className="absolute start-3 top-10 bottom-8 w-0.5 bg-zinc-800" />
+
+											{/* Root Node */}
+											<div className="p-3 rounded-lg border border-cyan-500/20 bg-cyan-950/15 text-cyan-300 text-xs font-bold shadow relative text-start">
+												<div className="absolute start-[-16px] top-1/2 -translate-y-1/2 w-4 h-0.5 bg-zinc-800" />
+												🧠 {mindmap.subject}
+											</div>
+
+											{/* Branch Nodes */}
+											{mindmap.branches.map((branch) => (
+												<div
+													key={branch.title}
+													className="flex flex-col gap-2 ps-4 relative text-start"
+												>
+													{/* Connect branch to parent line */}
+													<div className="absolute start-[-12px] top-4 w-3.5 h-0.5 bg-zinc-800" />
+
+													<div className="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-850 dark:text-zinc-200 text-xs font-semibold relative">
+														📂 {branch.title}
+													</div>
+
+													{/* Leaf Nodes */}
+													<div className="flex flex-col gap-1.5 ps-4 relative">
+														<div className="absolute start-[-12px] top-0 bottom-4 w-0.5 bg-zinc-800" />
+
+														{branch.leaves.map((leaf, li) => {
+															const leafKey = `${li}-${leaf.text}`;
+															return (
+																<Badge
+																	key={leafKey}
+																	variant="outline"
+																	className="w-full text-start p-2 rounded border border-zinc-200 dark:border-zinc-850/60 bg-zinc-50/40 dark:bg-zinc-950/40 text-zinc-650 dark:text-zinc-400 hover:text-zinc-850 dark:hover:text-zinc-200 hover:border-zinc-400 dark:hover:border-zinc-700 text-[11px] transition flex items-start gap-2 relative group cursor-pointer"
+																	render={
+																		<button
+																			type="button"
+																			onClick={() => onSeek(leaf.seconds)}
+																		/>
+																	}
+																>
+																	<div className="absolute start-[-16px] top-1/2 -translate-y-1/2 w-4 h-0.5 bg-zinc-800" />
+																	<span className="text-accent-cyan group-hover:scale-105 transition font-mono shrink-0">
+																		🏷️
 																	</span>
-																</div>
-															</button>
+																	<div className="flex-1 flex flex-col gap-0.5">
+																		<span>{leaf.text}</span>
+																		<span className="text-[9px] text-zinc-500 font-mono">
+																			{t.seekPlaybackTo}{" "}
+																			{formatTime(leaf.seconds)}
+																		</span>
+																	</div>
+																</Badge>
+															);
+														})}
+													</div>
+												</div>
+											))}
+										</div>
+									)}
+								</div>
+							</ScrollArea>
+						</TabsContent>
+
+						{/* Tab 4: Handwritten Notes */}
+						<TabsContent
+							value="notes"
+							className="absolute inset-0 flex flex-col outline-none"
+						>
+							<ScrollArea className="flex-grow">
+								<div className="p-4 flex flex-col gap-4">
+									{!notes && !loadingNotes && (
+										<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">
+											<PenTool className="w-8 h-8 text-zinc-600 mb-2" />
+											<span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">
+												{t.noNotes}
+											</span>
+											<button
+												type="button"
+												onClick={generateNotes}
+												className="px-4 py-2 rounded-lg bg-accent-cyan/90 hover:bg-accent-cyan text-zinc-950 text-xs font-bold transition shadow-lg"
+											>
+												{t.generateNotesBtn}
+											</button>
+										</div>
+									)}
+
+									{loadingNotes && (
+										<div className="flex-1 flex flex-col items-center justify-center gap-2 py-12">
+											<Loader2 className="w-6 h-6 text-accent-cyan animate-spin" />
+											<span className="text-xs text-zinc-500 font-medium">
+												Writing calligraphy study notes...
+											</span>
+										</div>
+									)}
+
+									{notes && !loadingNotes && (
+										<div className="flex-grow flex flex-col min-h-0 relative animate-fade-in">
+											<div className="flex items-center justify-between border-b border-zinc-800/60 pb-1.5 mb-2 shrink-0">
+												<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
+													{t.notesTab}
+												</span>
+												<div className="flex items-center gap-1.5">
+													<button
+														type="button"
+														onClick={downloadNotesAsImage}
+														className="px-2 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold transition flex items-center gap-1"
+														title="Download Calligraphy Notes as PNG"
+													>
+														<Download className="w-3 h-3" />
+														PNG Image
+													</button>
+												</div>
+											</div>
+											<div className="rounded-xl border border-zinc-200 dark:border-zinc-800/40 ruled-paper shadow-inner p-4 min-h-[300px]">
+												<div
+													className="py-4 select-text"
+													style={{
+														fontFamily: isRtl
+															? "'Aref Ruqaa', serif"
+															: "'Caveat', cursive",
+														fontSize: isRtl ? "17px" : "20px",
+														fontWeight: 500,
+														color: isRtl
+															? "rgba(6, 182, 212, 0.9)"
+															: "rgba(124, 58, 237, 0.9)",
+														textShadow: "0.5px 0.5px 0px rgba(0,0,0,0.1)",
+														lineHeight: "28px",
+														direction: isRtl ? "rtl" : "ltr",
+													}}
+												>
+													{notes.split("\n").map((line, idx) => {
+														const keyVal = `note-line-${idx}`;
+														return (
+															<div
+																key={keyVal}
+																className="min-h-[28px] overflow-hidden whitespace-pre-wrap"
+															>
+																{line}
+															</div>
 														);
 													})}
 												</div>
 											</div>
-										))}
-									</div>
-								</div>
-							)}
-						</div>
-					)}
-
-					{/* Tab 4: Handwritten Notes */}
-					{activeTab === "notes" && (
-						<div className="flex flex-col gap-4 h-full">
-							{!notes && !loadingNotes && (
-								<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">
-									<PenTool className="w-8 h-8 text-zinc-600 mb-2" />
-									<span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">
-										{t.noNotes}
-									</span>
-									<button
-										type="button"
-										onClick={generateNotes}
-										className="px-4 py-2 rounded-lg bg-accent-cyan/90 hover:bg-accent-cyan text-zinc-950 text-xs font-bold transition shadow-lg"
-									>
-										{t.generateNotesBtn}
-									</button>
-								</div>
-							)}
-
-							{loadingNotes && (
-								<div className="flex-1 flex flex-col items-center justify-center gap-2">
-									<Loader2 className="w-6 h-6 text-accent-cyan animate-spin" />
-									<span className="text-xs text-zinc-500 font-medium">
-										Writing calligraphy study notes...
-									</span>
-								</div>
-							)}
-
-							{notes && !loadingNotes && (
-								<div className="flex-1 flex flex-col min-h-0 relative animate-fade-in">
-									<div className="flex items-center justify-between border-b border-zinc-800/60 pb-1.5 mb-2 shrink-0">
-										<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
-											{t.notesTab}
-										</span>
-										<div className="flex items-center gap-1.5">
-											<button
-												type="button"
-												onClick={downloadNotesAsImage}
-												className="px-2 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold transition flex items-center gap-1"
-												title="Download Calligraphy Notes as PNG"
-											>
-												<Download className="w-3 h-3" />
-												PNG Image
-											</button>
 										</div>
-									</div>
-									<div className="flex-1 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800/40 ruled-paper shadow-inner scrollbar-thin">
-										<div
-											className="py-4 select-text"
-											style={{
-												fontFamily: isRtl
-													? "'Aref Ruqaa', serif"
-													: "'Caveat', cursive",
-												fontSize: isRtl ? "17px" : "20px",
-												fontWeight: 500,
-												color: isRtl
-													? "rgba(6, 182, 212, 0.9)"
-													: "rgba(124, 58, 237, 0.9)",
-												textShadow: "0.5px 0.5px 0px rgba(0,0,0,0.1)",
-												lineHeight: "28px",
-											}}
-										>
-											{notes.split("\n").map((line, idx) => {
-												const keyVal = `note-line-${idx}`;
-												return (
-													<div
-														key={keyVal}
-														className="min-h-[28px] overflow-hidden whitespace-pre-wrap"
-													>
-														{line}
-													</div>
-												);
-											})}
-										</div>
-									</div>
+									)}
 								</div>
-							)}
-						</div>
-					)}
-				</div>
+							</ScrollArea>
+						</TabsContent>
+					</div>
+				</Tabs>
 			</div>
 
 			{/* Expand/Collapse border toggle handle button */}
@@ -1648,7 +1638,7 @@ export default function StudyStudio({
 					</div>
 				)}
 			</div>
-		</motion.div>
+		</div>
 	);
 }
 

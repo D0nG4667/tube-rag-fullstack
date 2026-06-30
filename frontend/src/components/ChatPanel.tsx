@@ -1,7 +1,9 @@
 "use client";
 
-import { Loader2, Send, Sparkles } from "lucide-react";
+import { BrainCircuit, Loader2, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Bubble, BubbleContent, BubbleGroup } from "@/components/ui/bubble";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { type Locale, translations } from "@/lib/translations";
 import CustomMarkdown from "./CustomMarkdown";
 import SpotlightPanel from "./SpotlightPanel";
@@ -163,79 +165,88 @@ export default function ChatPanel({
 
 			{/* Header */}
 			<div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800/50 flex items-center gap-2">
-				<Sparkles className="w-4 h-4 text-accent-cyan animate-pulse" />
+				<BrainCircuit className="w-4 h-4 text-accent-cyan animate-pulse" />
 				<span className="font-semibold text-sm text-zinc-800 dark:text-zinc-200">
 					{t.chatEngine}
 				</span>
 			</div>
 
 			{/* Messages */}
-			<div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-				{messages.length === 0 ? (
-					<div className="flex-1 flex flex-col items-center justify-center text-center p-6 gap-2">
-						<Loader2 className="w-5 h-5 text-accent-cyan animate-spin" />
-					</div>
-				) : (
-					messages.map((msg) => {
-						const cardEl = (
-							<div
-								key={msg.id}
-								className={`flex gap-3 max-w-[85%] ${
-									msg.role === "user"
-										? "self-end flex-row-reverse"
-										: "self-start"
-								}`}
-							>
-								<div
-									className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold ${
-										msg.role === "user"
-											? "bg-accent-violet/20 border border-accent-violet/40 text-accent-violet"
-											: "bg-accent-cyan/20 border border-accent-cyan/40 text-accent-cyan"
-									}`}
-								>
-									{msg.role === "user" ? "U" : "AI"}
-								</div>
-								<div
-									className={`p-3 rounded-xl border text-sm leading-relaxed transition-all duration-300 ${
-										msg.role === "user"
-											? "bg-accent-violet/5 border-accent-violet/20 text-zinc-800 dark:text-zinc-200"
-											: "bg-zinc-100/60 dark:bg-zinc-900/35 border-zinc-200 dark:border-zinc-800/35 text-zinc-700 dark:text-zinc-300"
-									}`}
-								>
-									{msg.role === "user" ? (
-										msg.text
-									) : (
-										<CustomMarkdown
-											content={msg.text}
-											onSeek={onSeek}
-											sources={msg.sources || []}
-											onHoverSlide={(url, x, y) => {
-												setHoveredSlideUrl(url);
-												setMousePos({ x, y });
-											}}
-											isRtl={isRtl}
-										/>
-									)}
-								</div>
-							</div>
-						);
-						return cardEl;
-					})
-				)}
-				{loading && (
-					<div className="flex justify-start">
-						<div className="bg-zinc-100/80 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl px-4 py-3 flex items-center gap-2">
-							<Loader2 className="w-4 h-4 animate-spin text-accent-cyan" />
-							<span className="text-xs font-semibold text-zinc-400">
-								{isRtl
-									? "جاري البحث عن المقاطع وصياغة الإجابة..."
-									: "Retrieving segments & generating grounded answer..."}
-							</span>
+			<ScrollArea className="flex-1">
+				<div className="p-4 flex flex-col gap-4">
+					{messages.length === 0 ? (
+						<div className="flex-1 flex flex-col items-center justify-center text-center p-6 gap-2">
+							<Loader2 className="w-5 h-5 text-accent-cyan animate-spin" />
 						</div>
-					</div>
-				)}
-				<div ref={chatEndRef} />
-			</div>
+					) : (
+						messages.map((msg) => {
+							const isUser = msg.role === "user";
+							const cardEl = (
+								<BubbleGroup
+									key={msg.id}
+									className={isUser ? "items-end" : "items-start"}
+								>
+									<div
+										className={`flex gap-2.5 items-end ${isUser ? "flex-row-reverse" : "flex-row"}`}
+									>
+										<div
+											className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-semibold ${
+												isUser
+													? "bg-accent-violet/20 border border-accent-violet/40 text-accent-violet"
+													: "bg-accent-cyan/20 border border-accent-cyan/40 text-accent-cyan"
+											}`}
+										>
+											{isUser ? "U" : "AI"}
+										</div>
+										<Bubble
+											variant={isUser ? "default" : "secondary"}
+											align={isUser ? "end" : "start"}
+											className="max-w-[85%]"
+										>
+											<BubbleContent
+												className={
+													isUser
+														? "bg-accent-violet/10 border-accent-violet/25 text-zinc-800 dark:text-zinc-200"
+														: "bg-zinc-100/60 dark:bg-zinc-900/35 border-zinc-200 dark:border-zinc-800/35 text-zinc-700 dark:text-zinc-300"
+												}
+											>
+												{isUser ? (
+													msg.text
+												) : (
+													<CustomMarkdown
+														content={msg.text}
+														onSeek={onSeek}
+														sources={msg.sources || []}
+														onHoverSlide={(url, x, y) => {
+															setHoveredSlideUrl(url);
+															setMousePos({ x, y });
+														}}
+														isRtl={isRtl}
+													/>
+												)}
+											</BubbleContent>
+										</Bubble>
+									</div>
+								</BubbleGroup>
+							);
+							return cardEl;
+						})
+					)}
+					{loading && (
+						<Bubble variant="muted" align="start">
+							<BubbleContent className="bg-zinc-100/80 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800/50 px-4 py-3 flex items-center gap-2">
+								<Loader2 className="w-4 h-4 animate-spin text-accent-cyan" />
+								<span className="text-xs font-semibold text-zinc-400">
+									{isRtl
+										? "جاري البحث عن المقاطع وصياغة الإجابة..."
+										: "Retrieving segments & generating grounded answer..."}
+								</span>
+							</BubbleContent>
+						</Bubble>
+					)}
+					<div ref={chatEndRef} />
+				</div>
+			</ScrollArea>
 
 			{/* Input form */}
 			<form
