@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     BACKEND_URL: str = "http://localhost:8000"
     SENTRY_DSN: str = ""
+    YOUTUBE_PROXY: str = ""
+    SUPADATA_API_KEY: str = ""
 
 
 @lru_cache

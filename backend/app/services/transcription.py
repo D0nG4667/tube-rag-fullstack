@@ -135,7 +135,13 @@ def time_aware_chunker(
     return chunks
 
 
-def download_audio_segment(url: str, start_sec: float, end_sec: float, out_path: str):
+def download_audio_segment(
+    url: str,
+    start_sec: float,
+    end_sec: float,
+    out_path: str,
+    youtube_proxy: str | None = None,
+):
     """
     Downloads a specific segment of video audio using yt-dlp.
     """
@@ -160,8 +166,11 @@ def download_audio_segment(url: str, start_sec: float, end_sec: float, out_path:
         f"*{start_str}-{end_str}",
         "-o",
         out_path,
-        url,
     ]
+    if youtube_proxy:
+        cmd += ["--proxy", youtube_proxy]
+    cmd += [url]
+
     try:
         subprocess.run(cmd, check=True)
     except (FileNotFoundError, subprocess.CalledProcessError) as e:
@@ -172,8 +181,11 @@ def download_audio_segment(url: str, start_sec: float, end_sec: float, out_path:
             with open(out_path, "wb") as f:
                 f.write(b"MOCK AUDIO DATA")
             return
+        error_detail = ""
+        if isinstance(e, subprocess.CalledProcessError):
+            error_detail = f" (Command returned exit status {e.returncode})"
         raise RuntimeError(
-            "yt-dlp is not installed or not in the system PATH. Please install it to support audio extraction fallback."
+            f"yt-dlp failed to download audio segment{error_detail}. Please ensure yt-dlp is installed and not blocked by YouTube."
         ) from e
 
 
@@ -202,3 +214,38 @@ def transcribe_audio_with_gemini(audio_path: str, api_key: str | None = None) ->
         return response.text
     finally:
         client.files.delete(name=file_ref.name)
+
+
+def fetch_transcript_from_supadata(video_id: str, api_key: str) -> list[dict]:
+    """
+    Fetches transcript for the YouTube video from Supadata.
+    Returns a list of dicts with 'text', 'start' (seconds), and 'duration' (seconds).
+    """
+    import httpx
+
+    url = f"https://api.supadata.ai/v1/youtube/transcript?videoId={video_id}&text=false"
+    headers = {
+        "x-api-key": api_key,
+        "Content-Type": "application/json",
+    }
+
+    response = httpx.get(url, headers=headers, timeout=30.0)
+    response.raise_for_status()
+    data = response.json()
+
+    content = data.get("content")
+    if not isinstance(content, list):
+        raise ValueError("Unexpected transcript format from Supadata")
+
+    items = []
+    for item in content:
+        offset_ms = item.get("offset", 0.0)
+        duration_ms = item.get("duration", 0.0)
+        items.append(
+            {
+                "text": item.get("text", ""),
+                "start": offset_ms / 1000.0,
+                "duration": duration_ms / 1000.0,
+            }
+        )
+    return items

@@ -9,6 +9,7 @@ from qstash import Receiver
 from qstash.errors import SignatureError
 from supabase import Client as SupabaseClient
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.proxies import GenericProxyConfig
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_supabase
@@ -20,6 +21,7 @@ from app.services.frame_extractor import (
 )
 from app.services.transcription import (
     download_audio_segment,
+    fetch_transcript_from_supadata,
     get_embedding,
     time_aware_chunker,
     transcribe_audio_with_gemini,
@@ -77,11 +79,9 @@ def process_video_task(
     yt_url = f"https://www.youtube.com/watch?v={video['youtube_id']}"
 
     if step == "transcribe":
-        try:
-            # Check native transcript first
-            raw_items = list(YouTubeTranscriptApi().fetch(video["youtube_id"]))
-            chunks = time_aware_chunker(raw_items)
 
+        def save_transcript_and_advance(raw_items_list):
+            chunks = time_aware_chunker(raw_items_list)
             # Embed & store chunk-by-chunk
             for ch in chunks:
                 embedding = get_embedding(ch["content"], api_key=gemini_api_key)
@@ -133,18 +133,54 @@ def process_video_task(
                     },
                 )
 
+        # Tier 1: Try native transcript first
+        try:
+            if settings.YOUTUBE_PROXY:
+                proxy_config = GenericProxyConfig(
+                    http_url=settings.YOUTUBE_PROXY,
+                    https_url=settings.YOUTUBE_PROXY,
+                )
+                api = YouTubeTranscriptApi(proxy_config=proxy_config)
+            else:
+                api = YouTubeTranscriptApi()
+
+            raw_items = list(api.fetch(video["youtube_id"]))
+            save_transcript_and_advance(raw_items)
+            return {"status": "ok"}
         except Exception as e:
-            # Fallback to audio segment extraction + Gemini transcription
+            print(f"Native transcript failed: {e}. Attempting Supadata...")
+
+        # Tier 2: Try Supadata transcript
+        if settings.SUPADATA_API_KEY:
+            try:
+                raw_items = fetch_transcript_from_supadata(
+                    video["youtube_id"], settings.SUPADATA_API_KEY
+                )
+                save_transcript_and_advance(raw_items)
+                return {"status": "ok"}
+            except Exception as e_supa:
+                print(
+                    f"Supadata transcript failed: {e_supa}. Falling back to Gemini transcription..."
+                )
+        else:
             print(
-                f"Native transcript failed: {e}. Falling back to Gemini transcription..."
+                "Supadata API key not configured. Falling back to Gemini transcription..."
             )
 
+        # Tier 3: Fallback to audio segment extraction + Gemini transcription
+        try:
             # Generate platform-safe temp path
             tmp_audio = os.path.join(
                 tempfile.gettempdir(), f"audio_{video_id}_{offset}.m4a"
             )
             try:
-                download_audio_segment(yt_url, offset, offset + 600.0, tmp_audio)
+                download_audio_segment(
+                    yt_url,
+                    offset,
+                    offset + 600.0,
+                    tmp_audio,
+                    youtube_proxy=settings.YOUTUBE_PROXY,
+                )
                 transcript_text = transcribe_audio_with_gemini(
                     tmp_audio, api_key=gemini_api_key
                 )
@@ -241,6 +277,10 @@ def process_video_task(
                             "gemini_api_key": gemini_api_key,
                         },
                     )
+        except Exception as e_fallback:
+            print(f"Fallback transcription failed: {e_fallback}")
+            db.table("videos").update({"status": "failed"}).eq("id", video_id).execute()
+            raise e_fallback
 
     elif step == "extract_frames":
         tmp_video = os.path.join(

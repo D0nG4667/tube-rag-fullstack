@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.api.v1.ingest import get_supabase
 from app.api.v1.webhook import verify_qstash_signature
+from app.core.config import Settings, get_settings
 from app.main import app
 from app.services.transcription import time_aware_chunker
 
@@ -99,6 +100,10 @@ def test_process_video_webhook_fallback():
     app.dependency_overrides[get_supabase] = lambda: mock_db
     app.dependency_overrides[verify_qstash_signature] = lambda: None
 
+    mock_settings = Settings()
+    mock_settings.SUPADATA_API_KEY = ""
+    app.dependency_overrides[get_settings] = lambda: mock_settings
+
     # Force native transcript fetch to fail
     with patch(
         "youtube_transcript_api.YouTubeTranscriptApi.fetch",
@@ -123,5 +128,68 @@ def test_process_video_webhook_fallback():
 
                 # Verify status update recorded next offset
                 mock_db.table.assert_any_call("videos")
+
+    app.dependency_overrides.clear()
+
+
+def test_process_video_webhook_supadata_success():
+    mock_db = MagicMock()
+    mock_video_select = MagicMock()
+    mock_video_select.execute.return_value = MagicMock(
+        data=[
+            {
+                "id": "test_video_uuid",
+                "youtube_id": "dQw4w9WgXcQ",
+                "title": "Rick Roll",
+                "status": "pending",
+                "duration": 210.0,
+            }
+        ]
+    )
+    mock_db.table.return_value.select.return_value.eq.return_value = mock_video_select
+
+    app.dependency_overrides[get_supabase] = lambda: mock_db
+    app.dependency_overrides[verify_qstash_signature] = lambda: None
+
+    from app.core.config import Settings
+
+    mock_settings = Settings()
+    mock_settings.SUPADATA_API_KEY = "test-supadata-key"
+    app.dependency_overrides[get_settings] = lambda: mock_settings
+
+    # Force native transcript to fail, mock Supadata success
+    with patch(
+        "youtube_transcript_api.YouTubeTranscriptApi.fetch",
+        side_effect=Exception("Blocked"),
+    ):
+        with patch(
+            "app.api.v1.webhook.fetch_transcript_from_supadata"
+        ) as mock_supadata:
+            with patch("app.api.v1.webhook.download_audio_segment") as mock_download:
+                with patch("qstash.QStash") as mock_qstash:
+                    mock_supadata.return_value = [
+                        {
+                            "text": "Never gonna give you up",
+                            "start": 0.0,
+                            "duration": 2.0,
+                        }
+                    ]
+
+                    response = client.post(
+                        "/api/v1/internal/process-video",
+                        json={
+                            "video_id": "test_video_uuid",
+                            "step": "transcribe",
+                            "offset": 0.0,
+                        },
+                    )
+
+                    assert response.status_code == 200
+                    assert response.json() == {"status": "ok"}
+                    mock_supadata.assert_called_once_with(
+                        "dQw4w9WgXcQ", "test-supadata-key"
+                    )
+                    mock_download.assert_not_called()
+                    mock_qstash.assert_called_once()
 
     app.dependency_overrides.clear()
