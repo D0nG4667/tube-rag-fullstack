@@ -1,6 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,6 +9,7 @@ from app.api.v1.chat import router as chat_router
 from app.api.v1.ingest import router as ingest_router
 from app.api.v1.notebook import router as notebook_router
 from app.api.v1.webhook import router as webhook_router
+from app.core.config import settings
 from app.core.database import (
     close_db_connection,
     start_default_videos_ingestion,
@@ -15,6 +17,13 @@ from app.core.database import (
 )
 
 logger = logging.getLogger("uvicorn.error")
+
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        traces_sample_rate=1.0,
+        send_default_pii=True,
+    )
 
 
 @asynccontextmanager

@@ -19,6 +19,7 @@ dependencies = [
     "pillow>=10.0.0",
     "fastapi-cli>=0.0.20",
     "yt-dlp>=2026.6.9",
+    "sentry-sdk>=2.63.0",
 ]
 
 [dependency-groups]

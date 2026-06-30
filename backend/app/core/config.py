@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     QSTASH_NEXT_SIGNING_KEY: str = ""
     GEMINI_API_KEY: str = ""
     BACKEND_URL: str = "http://localhost:8000"
+    SENTRY_DSN: str = ""
 
 
 @lru_cache
@@ -28,4 +29,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-

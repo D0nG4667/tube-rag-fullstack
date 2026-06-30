@@ -91,7 +91,9 @@ def generate_outline(
         return {"outline": response.text}
     except Exception as e:
         if is_gemini_quota_error(e):
-            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED") from e
+            raise HTTPException(
+                status_code=429, detail="GEMINI_API_KEY_REQUIRED"
+            ) from e
         raise HTTPException(status_code=500, detail=f"LLM outline error: {e!s}") from e
 
 
@@ -366,8 +368,12 @@ def generate_podcast_audio(
                     if is_gemini_quota_error(primary_err):
                         raise primary_err
                     import logging
+
                     logger = logging.getLogger("uvicorn.error")
-                    logger.warning("Gemini 3.1 Flash TTS failed, falling back to 2.5: %s", primary_err)
+                    logger.warning(
+                        "Gemini 3.1 Flash TTS failed, falling back to 2.5: %s",
+                        primary_err,
+                    )
                     use_fallback_model = True
 
             if use_fallback_model or not response:
@@ -442,6 +448,7 @@ def generate_podcast_audio(
 
     except Exception as e:
         import logging
+
         logger = logging.getLogger("uvicorn.error")
         logger.error("TTS podcast audio generation failed: %s", e)
         if is_gemini_quota_error(e):
@@ -449,5 +456,6 @@ def generate_podcast_audio(
                 status_code=429, detail="GEMINI_API_KEY_REQUIRED"
             ) from e
         raise HTTPException(
-            status_code=500, detail="Failed to synthesize voice dialogue clip. Please verify model configuration and try again."
+            status_code=500,
+            detail="Failed to synthesize voice dialogue clip. Please verify model configuration and try again.",
         ) from e

@@ -117,8 +117,12 @@ def run_chat_rag(
         query_embedding = get_embedding(hyde_text, api_key=x_gemini_api_key)
     except Exception as e:
         if is_gemini_quota_error(e):
-            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED") from e
-        raise HTTPException(status_code=500, detail=f"Chat initialization error: {e!s}") from e
+            raise HTTPException(
+                status_code=429, detail="GEMINI_API_KEY_REQUIRED"
+            ) from e
+        raise HTTPException(
+            status_code=500, detail=f"Chat initialization error: {e!s}"
+        ) from e
 
     # 2. Query Hybrid Search RRF function in Supabase
     res = db.rpc(
@@ -154,7 +158,11 @@ def run_chat_rag(
         )
     except Exception as e:
         if is_gemini_quota_error(e):
-            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED") from e
-        raise HTTPException(status_code=500, detail=f"LLM generation error: {e!s}") from e
+            raise HTTPException(
+                status_code=429, detail="GEMINI_API_KEY_REQUIRED"
+            ) from e
+        raise HTTPException(
+            status_code=500, detail=f"LLM generation error: {e!s}"
+        ) from e
 
     return {"response": response_text, "sources": res.data}

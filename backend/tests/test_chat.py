@@ -33,7 +33,7 @@ def test_chat_endpoint_success():
     app.dependency_overrides[get_supabase] = lambda: mock_db
 
     response = client.post(
-        "/api/v1/chat",
+        "/api/v1/chat/query",
         json={"video_id": "test_video_uuid", "message": "tell me about this video"},
     )
 
@@ -69,7 +69,7 @@ def test_chat_endpoint_no_results():
     app.dependency_overrides[get_supabase] = lambda: mock_db
 
     response = client.post(
-        "/api/v1/chat",
+        "/api/v1/chat/query",
         json={"video_id": "test_video_uuid", "message": "tell me about this video"},
     )
 

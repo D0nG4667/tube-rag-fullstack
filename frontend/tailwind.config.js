@@ -20,7 +20,11 @@ module.exports = {
 	},
 	plugins: [
 		({ addVariant }) => {
-			addVariant("data-active", ["&[data-active]", "&[data-state=active]", '&[aria-selected="true"]']);
+			addVariant("data-active", [
+				"&[data-active]",
+				"&[data-state=active]",
+				'&[aria-selected="true"]',
+			]);
 		},
 	],
 };
