@@ -414,6 +414,8 @@ def generate_podcast_audio(
         return StreamingResponse(io.BytesIO(combined_wav), media_type="audio/wav")
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         if is_gemini_quota_error(e):
             raise HTTPException(
                 status_code=429, detail="GEMINI_API_KEY_REQUIRED"
