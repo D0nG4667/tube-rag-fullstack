@@ -11,15 +11,16 @@ from supabase import Client as SupabaseClient
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_supabase
+from app.core.exceptions import is_gemini_quota_error
 from app.services.prompts import (
-    OUTLINE_SYSTEM_INSTRUCTION,
-    OUTLINE_USER_TEMPLATE,
-    PODCAST_SYSTEM_INSTRUCTION,
-    PODCAST_USER_TEMPLATE,
     MINDMAP_SYSTEM_INSTRUCTION,
     MINDMAP_USER_TEMPLATE,
     NOTES_SYSTEM_INSTRUCTION,
     NOTES_USER_TEMPLATE,
+    OUTLINE_SYSTEM_INSTRUCTION,
+    OUTLINE_USER_TEMPLATE,
+    PODCAST_SYSTEM_INSTRUCTION,
+    PODCAST_USER_TEMPLATE,
 )
 
 router = APIRouter()
@@ -115,13 +116,9 @@ def generate_outline(
         )
         return {"outline": response.text}
     except Exception as e:
-        error_str = str(e).upper()
-        if any(
-            keyword in error_str
-            for keyword in ["429", "RESOURCE_EXHAUSTED", "403", "API_KEY", "QUOTA"]
-        ):
-            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED")
-        raise HTTPException(status_code=500, detail=f"LLM outline error: {e!s}")
+        if is_gemini_quota_error(e):
+            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED") from e
+        raise HTTPException(status_code=500, detail=f"LLM outline error: {e!s}") from e
 
 
 @router.post("/api/v1/notebook/podcast")
@@ -190,11 +187,7 @@ def generate_podcast(
         data = PodcastScript.model_validate_json(response.text)
         return {"script": [turn.model_dump() for turn in data.script]}
     except Exception as e:
-        error_str = str(e).upper()
-        if any(
-            keyword in error_str
-            for keyword in ["429", "RESOURCE_EXHAUSTED", "403", "API_KEY", "QUOTA"]
-        ):
+        if is_gemini_quota_error(e):
             raise HTTPException(
                 status_code=429, detail="GEMINI_API_KEY_REQUIRED"
             ) from e
@@ -270,11 +263,7 @@ def generate_mindmap(
         data = MindmapSchema.model_validate_json(response.text)
         return data.model_dump()
     except Exception as e:
-        error_str = str(e).upper()
-        if any(
-            keyword in error_str
-            for keyword in ["429", "RESOURCE_EXHAUSTED", "403", "API_KEY", "QUOTA"]
-        ):
+        if is_gemini_quota_error(e):
             raise HTTPException(
                 status_code=429, detail="GEMINI_API_KEY_REQUIRED"
             ) from e
@@ -339,11 +328,7 @@ def generate_notes(
         )
         return {"notes": response.text}
     except Exception as e:
-        error_str = str(e).upper()
-        if any(
-            keyword in error_str
-            for keyword in ["429", "RESOURCE_EXHAUSTED", "403", "API_KEY", "QUOTA"]
-        ):
+        if is_gemini_quota_error(e):
             raise HTTPException(
                 status_code=429, detail="GEMINI_API_KEY_REQUIRED"
             ) from e
@@ -459,11 +444,7 @@ def generate_podcast_audio(
         return StreamingResponse(io.BytesIO(combined_wav), media_type="audio/wav")
 
     except Exception as e:
-        error_str = str(e).upper()
-        if any(
-            keyword in error_str
-            for keyword in ["429", "RESOURCE_EXHAUSTED", "403", "API_KEY", "QUOTA"]
-        ):
+        if is_gemini_quota_error(e):
             raise HTTPException(
                 status_code=429, detail="GEMINI_API_KEY_REQUIRED"
             ) from e

@@ -9,9 +9,9 @@ from app.api.v1.ingest import router as ingest_router
 from app.api.v1.notebook import router as notebook_router
 from app.api.v1.webhook import router as webhook_router
 from app.core.database import (
-    verify_db_connection,
-    start_default_videos_ingestion,
     close_db_connection,
+    start_default_videos_ingestion,
+    verify_db_connection,
 )
 
 logger = logging.getLogger("uvicorn.error")

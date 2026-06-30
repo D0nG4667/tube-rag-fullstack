@@ -9,6 +9,7 @@ from supabase import Client as SupabaseClient
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_supabase
+from app.core.exceptions import is_gemini_quota_error
 from app.services.prompts import (
     HYDE_SYSTEM_INSTRUCTION,
     HYDE_USER_TEMPLATE,
@@ -120,13 +121,9 @@ def run_chat_rag(
         )
         query_embedding = get_embedding(hyde_text, api_key=x_gemini_api_key)
     except Exception as e:
-        error_str = str(e).upper()
-        if any(
-            keyword in error_str
-            for keyword in ["429", "RESOURCE_EXHAUSTED", "403", "API_KEY", "QUOTA"]
-        ):
-            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED")
-        raise HTTPException(status_code=500, detail=f"Chat initialization error: {e!s}")
+        if is_gemini_quota_error(e):
+            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED") from e
+        raise HTTPException(status_code=500, detail=f"Chat initialization error: {e!s}") from e
 
     # 2. Query Hybrid Search RRF function in Supabase
     res = db.rpc(
@@ -161,12 +158,8 @@ def run_chat_rag(
             api_key=x_gemini_api_key,
         )
     except Exception as e:
-        error_str = str(e).upper()
-        if any(
-            keyword in error_str
-            for keyword in ["429", "RESOURCE_EXHAUSTED", "403", "API_KEY", "QUOTA"]
-        ):
-            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED")
-        raise HTTPException(status_code=500, detail=f"LLM generation error: {e!s}")
+        if is_gemini_quota_error(e):
+            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED") from e
+        raise HTTPException(status_code=500, detail=f"LLM generation error: {e!s}") from e
 
     return {"response": response_text, "sources": res.data}

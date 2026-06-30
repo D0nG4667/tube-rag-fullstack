@@ -1,6 +1,6 @@
-import re
 import json
 import logging
+import re
 import urllib.request
 from collections.abc import Generator
 
