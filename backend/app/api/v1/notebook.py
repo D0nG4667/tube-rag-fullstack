@@ -338,26 +338,53 @@ def generate_podcast_audio(
 
     client = genai.Client(api_key=effective_key)
     wav_clips = []
+    use_fallback_model = False
 
     try:
         active_turns = req.script[:8]
         for turn in active_turns:
             voice_name = "Aoede" if turn.host == "Rachel" else "Puck"
 
-            response = client.models.generate_content(
-                model="gemini-2.5-flash-preview-tts",
-                contents=turn.text,
-                config=types.GenerateContentConfig(
-                    response_modalities=["AUDIO"],
-                    speech_config=types.SpeechConfig(
-                        voice_config=types.VoiceConfig(
-                            prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                                voice_name=voice_name
+            response = None
+            if not use_fallback_model:
+                try:
+                    response = client.models.generate_content(
+                        model="gemini-3.1-flash-tts-preview",
+                        contents=turn.text,
+                        config=types.GenerateContentConfig(
+                            response_modalities=["AUDIO"],
+                            speech_config=types.SpeechConfig(
+                                voice_config=types.VoiceConfig(
+                                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                        voice_name=voice_name
+                                    )
+                                )
+                            ),
+                        ),
+                    )
+                except Exception as primary_err:
+                    if is_gemini_quota_error(primary_err):
+                        raise primary_err
+                    import logging
+                    logger = logging.getLogger("uvicorn.error")
+                    logger.warning("Gemini 3.1 Flash TTS failed, falling back to 2.5: %s", primary_err)
+                    use_fallback_model = True
+
+            if use_fallback_model or not response:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash-preview-tts",
+                    contents=turn.text,
+                    config=types.GenerateContentConfig(
+                        response_modalities=["AUDIO"],
+                        speech_config=types.SpeechConfig(
+                            voice_config=types.VoiceConfig(
+                                prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                    voice_name=voice_name
+                                )
                             )
-                        )
+                        ),
                     ),
-                ),
-            )
+                )
 
             clip_bytes = None
             if response.candidates and response.candidates[0].content.parts:
