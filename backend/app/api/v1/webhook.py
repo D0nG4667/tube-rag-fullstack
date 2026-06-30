@@ -4,7 +4,7 @@ import tempfile
 
 import cv2
 import numpy as np
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from qstash import Receiver
 from qstash.errors import SignatureError
 from supabase import Client as SupabaseClient
@@ -30,13 +30,15 @@ router = APIRouter()
 
 async def verify_qstash_signature(
     request: Request,
-    signature: str = Header(None),
     settings: Settings = Depends(get_settings),
 ):
     if settings.ENVIRONMENT == "local" and not settings.QSTASH_CURRENT_SIGNING_KEY:
         # Bypass signature verification in local development if key is empty
         return
 
+    signature = request.headers.get("Upstash-Signature") or request.headers.get(
+        "signature"
+    )
     if not signature:
         raise HTTPException(status_code=401, detail="Signature missing")
 
@@ -65,6 +67,8 @@ def process_video_task(
     Executes the video ingestion and processing task step-by-step.
     Supports recursive scheduling via either QStash or local BackgroundTasks.
     """
+    base_url = (backend_url or settings.BACKEND_URL or "").rstrip("/")
+
     # Fetch video record
     res = db.table("videos").select("*").eq("id", video_id).execute()
     if not res.data:
@@ -120,7 +124,7 @@ def process_video_task(
 
                 q_client = QStash(token=settings.QSTASH_TOKEN)
                 q_client.message.publish_json(
-                    url=f"{backend_url or settings.BACKEND_URL}/api/v1/internal/process-video",
+                    url=f"{base_url}/api/v1/internal/process-video",
                     body={
                         "video_id": video_id,
                         "step": "extract_frames",
@@ -195,7 +199,7 @@ def process_video_task(
 
                     q_client = QStash(token=settings.QSTASH_TOKEN)
                     q_client.message.publish_json(
-                        url=f"{backend_url or settings.BACKEND_URL}/api/v1/internal/process-video",
+                        url=f"{base_url}/api/v1/internal/process-video",
                         body={
                             "video_id": video_id,
                             "step": "transcribe",
@@ -229,7 +233,7 @@ def process_video_task(
 
                     q_client = QStash(token=settings.QSTASH_TOKEN)
                     q_client.message.publish_json(
-                        url=f"{backend_url or settings.BACKEND_URL}/api/v1/internal/process-video",
+                        url=f"{base_url}/api/v1/internal/process-video",
                         body={
                             "video_id": video_id,
                             "step": "extract_frames",
@@ -338,7 +342,7 @@ def process_video_task(
 
                 q_client = QStash(token=settings.QSTASH_TOKEN)
                 q_client.message.publish_json(
-                    url=f"{backend_url or settings.BACKEND_URL}/api/v1/internal/process-video",
+                    url=f"{base_url}/api/v1/internal/process-video",
                     body={
                         "video_id": video_id,
                         "step": "extract_frames",
@@ -386,6 +390,9 @@ async def process_video_webhook(
             backend_url = f"{forwarded_proto}://{forwarded_host}"
         else:
             backend_url = str(request.base_url).rstrip("/")
+
+    if backend_url:
+        backend_url = backend_url.rstrip("/")
 
     if db is None:
         raise HTTPException(status_code=500, detail="Database client is not configured")

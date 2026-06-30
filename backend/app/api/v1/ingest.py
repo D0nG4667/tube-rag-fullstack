@@ -81,6 +81,9 @@ def ingest_video(
         else:
             backend_url = str(request.base_url).rstrip("/")
 
+    if backend_url:
+        backend_url = backend_url.rstrip("/")
+
     # Publish to QStash or run locally in BackgroundTasks
     if settings.ENVIRONMENT == "local" and "pytest" not in sys.modules:
         background_tasks.add_task(
