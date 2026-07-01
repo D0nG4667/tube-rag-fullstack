@@ -18,7 +18,7 @@ Provide a premium, responsive mobile layout for the TubeRAG Workspace Console, r
 * **Target File:** [ControlDrawer.tsx](../../../frontend/src/components/ControlDrawer.tsx)
 * **Description:** Update the left drawer to slide **over** the content absolutely on mobile, append hidden secondary action links and metadata to the bottom, and hide the redundant drag pill toggle button.
 * **Responsive Layout Styling:**
-  * `<motion.div>`: Change className to use `absolute lg:relative top-0 bottom-0 left-0 lg:top-auto lg:bottom-auto lg:left-auto z-45 lg:z-40 shadow-2xl lg:shadow-none`.
+  * `<motion.div>`: Change className to use `absolute lg:relative top-0 bottom-0 left-0 lg:top-auto lg:bottom-auto lg:left-auto z-45 lg:z-40 overflow-visible transition-colors duration-300 shadow-2xl lg:shadow-none`.
 * **Pill Toggle Button Hiding:**
   * Collapse pill button: Add `hidden lg:flex` to prevent rendering overlapping handle buttons floating on mobile viewports.
 * **Elements added in Drawer Footer:**
@@ -42,11 +42,11 @@ Provide a premium, responsive mobile layout for the TubeRAG Workspace Console, r
     * Renders the StudyStudio component container.
     * Uses `<Brain className="w-4 h-4 text-cyan-400" />` next to text.
 
-### StudyStudio Tabs Mobile Scroll & Cleanup
+### StudyStudio Tabs Mobile Scroll & Alignment Fix
 * **Target File:** [StudyStudio.tsx](../../../frontend/src/components/StudyStudio.tsx)
-* **Description:** Enable horizontal swiping/scrolling on the sub-tabs list on mobile viewports while keeping them fully legible, and hide the close button since StudyStudio is rendered inline on mobile.
-* **Sub-tabs Scrolling:**
-  * Update `<TabsList>`: Add `overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]` to support overflow scroll and hide the scrollbar natively.
+* **Description:** Enable horizontal swiping/scrolling on the sub-tabs list on mobile viewports, align them to the start to prevent clipping the first tab, and hide the close button since StudyStudio is rendered inline on mobile.
+* **Sub-tabs Scrolling & Alignment:**
+  * Update `<TabsList>`: Add `justify-start overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]` to support horizontal flex alignment and hide browser scrollbars.
   * Update each `<TabsTrigger>`: Add `shrink-0 min-w-[110px] md:min-w-0` to prevent squeezing on mobile viewports.
 * **Close Panel Button:**
   * Update StudyStudio close `<button onClick={onToggleOpen} ...>`: Add `hidden lg:flex` to hide it on mobile since panel collapsing is a desktop-only feature.
@@ -56,5 +56,5 @@ Provide a premium, responsive mobile layout for the TubeRAG Workspace Console, r
 ## Verification Plan
 
 ### Manual Verification
-* **Device emulation:** Verify header layout, top tabs unified icons, close button visibility, absolute drawer overlay, and sub-tabs swipe/scroll behavior in Chrome DevTools using mobile responsive presets down to `360px` width.
+* **Device emulation:** Verify header layout, top tabs unified icons, close button visibility, absolute drawer overlay, and sub-tabs start-alignment with scroll/swipe behavior in Chrome DevTools using mobile responsive presets down to `360px` width.
 * **Component scrolling:** Verify that both the Chat Panel and StudyStudio tabs scroll properly inside their mobile tab views.
