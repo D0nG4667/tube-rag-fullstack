@@ -892,7 +892,7 @@ export default function StudyStudio({
 							value="outline"
 							className="absolute inset-0 flex flex-col outline-none"
 						>
-							<ScrollArea className="flex-grow">
+							<ScrollArea className="flex-grow min-h-0">
 								<div className="p-4 flex flex-col gap-4">
 									{!outline && !loadingOutline && (
 										<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">
@@ -942,7 +942,7 @@ export default function StudyStudio({
 							value="podcast"
 							className="absolute inset-0 flex flex-col outline-none"
 						>
-							<ScrollArea className="flex-grow">
+							<ScrollArea className="flex-grow min-h-0">
 								<div className="p-4 flex flex-col gap-4">
 									{!podcastScript.length && !loadingPodcast && (
 										<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">
@@ -1139,7 +1139,7 @@ export default function StudyStudio({
 							value="mindmap"
 							className="absolute inset-0 flex flex-col outline-none"
 						>
-							<ScrollArea className="flex-grow">
+							<ScrollArea className="flex-grow min-h-0">
 								<div className="p-4 flex flex-col gap-4">
 									{!mindmap && !loadingMindmap && (
 										<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">
@@ -1267,7 +1267,7 @@ export default function StudyStudio({
 							value="notes"
 							className="absolute inset-0 flex flex-col outline-none"
 						>
-							<ScrollArea className="flex-grow">
+							<ScrollArea className="flex-grow min-h-0">
 								<div className="p-4 flex flex-col gap-4">
 									{!notes && !loadingNotes && (
 										<div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/20">

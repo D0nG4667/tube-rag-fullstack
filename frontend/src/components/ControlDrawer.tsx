@@ -240,7 +240,7 @@ export default function ControlDrawer({
 				</div>
 
 				{/* Videos List */}
-				<ScrollArea className="flex-1">
+				<ScrollArea className="flex-1 min-h-0">
 					<div className="p-4 flex flex-col gap-3">
 						<div className="flex flex-col gap-2 shrink-0">
 							<span className="text-xs text-zinc-400 font-medium tracking-wider">
