@@ -1355,7 +1355,7 @@ export default function StudyStudio({
 			<button
 				type="button"
 				onClick={onToggleOpen}
-				className={`absolute top-1/2 -translate-y-1/2 z-50 w-5 h-10 rounded-full border border-zinc-800/80 bg-zinc-950/90 text-zinc-400 hover:text-white transition shadow-md flex items-center justify-center ${
+				className={`hidden lg:flex absolute top-1/2 -translate-y-1/2 z-50 w-5 h-10 rounded-full border border-zinc-800/80 bg-zinc-950/90 text-zinc-400 hover:text-white transition shadow-md items-center justify-center ${
 					isRtl ? "right-[-10px]" : "left-[-10px]"
 				}`}
 			>
