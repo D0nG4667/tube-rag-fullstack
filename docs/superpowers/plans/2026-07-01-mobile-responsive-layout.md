@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Refine the mobile layout by implementing `justify-start` flex layout on StudyStudio `<TabsList>` to prevent clipping the first tab trigger ("Outline") on mobile screens.
+**Goal:** Create a premium, responsive mobile layout with a workspace tab switcher, clean navigation icons, swipeable sub-tabs, and absolute drawer overlay positioning.
 
-**Architecture:** Add the `justify-start` class to the sub-tabs selection bar in `StudyStudio.tsx` to override the default `justify-center` from the shadcn/ui variants list.
+**Architecture:** Hide secondary actions from the header on mobile, rendering them in the left control drawer. Implement a mobile tab switcher to toggle between the Video/Chat workspace and the StudyStudio workspace. Update triggers to use Lucide vector icons. Set the left drawer to absolute positioning on mobile to overlay the screen, and align StudyStudio sub-tabs to the start.
 
 **Tech Stack:** React, Next.js, Tailwind CSS, shadcn/ui.
 
@@ -15,33 +15,57 @@
 
 ---
 
-### Task 1: Align Sub-tabs List to Start
+### Task 1: Add Mobile-Only Secondary Actions to Control Drawer
+
+**Files:**
+* Modify: [ControlDrawer.tsx](../../../frontend/src/components/ControlDrawer.tsx)
+
+- [x] **Step 1: Add mobile-only links to Control Drawer**
+- [x] **Step 2: Run Biome format and lint**
+- [x] **Step 3: Commit**
+
+---
+
+### Task 2: Refactor Top Header Layout
+
+**Files:**
+* Modify: [DashboardClient.tsx](../../../frontend/src/components/DashboardClient.tsx)
+
+- [x] **Step 1: Apply responsive styling hidden classes to header**
+- [x] **Step 2: Commit**
+
+---
+
+### Task 3: Implement Mobile Workspace Tab Switcher with Unified Lucide Icons
+
+**Files:**
+* Modify: [DashboardClient.tsx](../../../frontend/src/components/DashboardClient.tsx)
+
+- [x] **Step 1: Import Tv and Brain icons**
+- [x] **Step 2: Implement tabs switcher using shadcn/ui and Lucide icons**
+- [x] **Step 3: Run Biome format and lint**
+- [x] **Step 4: Commit**
+
+---
+
+### Task 4: Set Left Control Drawer to Absolute Overlay
+
+**Files:**
+* Modify: [ControlDrawer.tsx](../../../frontend/src/components/ControlDrawer.tsx)
+
+- [x] **Step 1: Set drawer motion container to absolute positioning on mobile**
+- [x] **Step 2: Hide border collapse pill toggle handle on mobile**
+- [x] **Step 3: Run Biome format and lint**
+- [x] **Step 4: Commit**
+
+---
+
+### Task 5: Align StudyStudio Sub-tabs to Start & Hide Close Button
 
 **Files:**
 * Modify: [StudyStudio.tsx](../../../frontend/src/components/StudyStudio.tsx)
 
-- [ ] **Step 1: Add justify-start to TabsList className**
-
-Modify [StudyStudio.tsx](../../../frontend/src/components/StudyStudio.tsx) around line 857 to include `justify-start`:
-
-```tsx
-					{/* Sub-tab selection */}
-					<TabsList className="w-full flex justify-start overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] border-b border-zinc-200 dark:border-zinc-800/40 p-1 bg-zinc-100/50 dark:bg-zinc-950/30 gap-1 shrink-0 rounded-none bg-transparent">
-```
-
-- [ ] **Step 2: Run format and lint**
-
-Run:
-```bash
-pnpm format; pnpm lint
-```
-Expected: formatting and linting completed successfully.
-
-- [ ] **Step 3: Commit**
-
-Run:
-```bash
-git add frontend/src/components/StudyStudio.tsx
-git commit -m "fix(mobile): align StudyStudio sub-tabs to start to prevent first tab clipping"
-```
-Expected: Commit successfully created locally.
+- [x] **Step 1: Hide close panel X button on mobile**
+- [x] **Step 2: Make sub-tabs scrollable and add justify-start to align them to the start**
+- [x] **Step 3: Run Biome format and lint**
+- [x] **Step 4: Commit**
