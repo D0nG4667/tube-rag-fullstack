@@ -454,14 +454,18 @@ export default function DashboardClient({ locale }: { locale: string }) {
 										className="text-xs font-semibold py-2 flex items-center justify-center gap-1.5"
 									>
 										<Tv className="w-3.5 h-3.5 text-cyan-450" />
-										<span>{locale === "ar" ? "الدردشة والتشغيل" : "Play & Chat"}</span>
+										<span>
+											{locale === "ar" ? "الدردشة والتشغيل" : "Play & Chat"}
+										</span>
 									</TabsTrigger>
 									<TabsTrigger
 										value="studystudio"
 										className="text-xs font-semibold py-2 flex items-center justify-center gap-1.5"
 									>
 										<Brain className="w-3.5 h-3.5 text-cyan-450" />
-										<span>{locale === "ar" ? "استوديو الدراسة" : "StudyStudio"}</span>
+										<span>
+											{locale === "ar" ? "استوديو الدراسة" : "StudyStudio"}
+										</span>
 									</TabsTrigger>
 								</TabsList>
 							</div>
