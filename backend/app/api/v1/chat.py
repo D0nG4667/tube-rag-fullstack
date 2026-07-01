@@ -94,11 +94,11 @@ def run_chat_rag(
     # If the video ID is not a valid UUID (e.g. mock-id-1), return a clean mock response structure
     if not is_valid_uuid(req.video_id):
         return {
-            "response": "Welcome to TubeRAG! This is a mock response grounded on the demo video. Try indexing a real YouTube video to run live RAG queries! Citing: [Transcript @ 00:02](cite:transcript:2).",
+            "response": "You are currently interacting with the TubeRAG interactive demo workspace. To ask live questions and generate real-time citations, please select a fully indexed video from the control drawer on the left, or ingest a new YouTube video. Citing: [Demo Transcript @ 00:02](cite:transcript:2).",
             "sources": [
                 {
                     "chunk_id": "00000000-0000-0000-0000-000000000000",
-                    "content": "Hello and welcome to the TubeRAG demo video. Here we showcase semantic search across video timelines.",
+                    "content": "Hello and welcome to the TubeRAG demo workspace. Here you can explore semantic timelines and search across video transcripts.",
                     "start_time": 2.0,
                     "end_time": 12.0,
                     "chunk_type": "transcript",

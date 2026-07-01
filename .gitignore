@@ -45,3 +45,6 @@ Thumbs.db
 .superpowers/sdd/task-*-prompt.md
 .superpowers/sdd/task-*-clean-prompt.md
 .superpowers/sdd/run_subagent.py
+
+# Database Migration Safety Backups
+backend/migrations_backups/
