@@ -313,7 +313,6 @@ export default function DashboardClient({ locale }: { locale: string }) {
 				isFocused={isChatFocused}
 			/>
 
-			{/* Collapsible Left drawer control */}
 			<ControlDrawer
 				videos={videos}
 				selectedVideoId={selectedVideo?.id || ""}
@@ -328,6 +327,16 @@ export default function DashboardClient({ locale }: { locale: string }) {
 				locale={locale}
 				onShowToast={showToast}
 			/>
+
+			{/* Mobile Backdrop Overlay */}
+			{isMobile && isLeftOpen && (
+				<button
+					type="button"
+					onClick={() => setIsLeftOpen(false)}
+					className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 w-full h-full cursor-default"
+					aria-label="Close menu"
+				/>
+			)}
 
 			{/* Main Core Viewport Split Grid */}
 			<div className="flex-1 flex flex-col p-6 overflow-hidden h-screen gap-6 z-10">

@@ -186,7 +186,7 @@ export default function ControlDrawer({
 		<motion.div
 			animate={{ width: isOpen ? 320 : 0 }}
 			transition={{ type: "spring", stiffness: 220, damping: 26 }}
-			className="h-full border-r border-zinc-200 dark:border-zinc-800/40 bg-white/80 dark:bg-zinc-950/40 backdrop-blur-2xl flex flex-col absolute lg:relative top-0 bottom-0 left-0 lg:top-auto lg:bottom-auto lg:left-auto shrink-0 z-45 lg:z-40 overflow-visible transition-colors duration-300 shadow-2xl lg:shadow-none"
+			className="h-full border-r border-zinc-200 dark:border-zinc-800/40 bg-white dark:bg-zinc-950 lg:bg-white/80 lg:dark:bg-zinc-950/40 lg:backdrop-blur-2xl flex flex-col absolute lg:relative top-0 bottom-0 left-0 lg:top-auto lg:bottom-auto lg:left-auto shrink-0 z-45 lg:z-40 overflow-visible transition-colors duration-300 shadow-2xl lg:shadow-none"
 		>
 			{/* Fixed-width Inner Container to prevent squishing text on width resize */}
 			<div
