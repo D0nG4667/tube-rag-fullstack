@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Refine the mobile layout by unifying top tab icons using Lucide vector icons, making StudyStudio sub-tabs horizontally scrollable on mobile, and hiding the StudyStudio close button on mobile viewports.
+**Goal:** Refine the mobile layout by implementing absolute overlay positioning for the left control drawer, hiding its border pill toggle handle on mobile screens, and ensuring visual consistency.
 
-**Architecture:** Update the mobile workspace triggers in `DashboardClient.tsx` to use `Tv` and `Brain` icons from Lucide instead of emojis. Modify `StudyStudio.tsx` to add scrollable Tailwind utilities to `<TabsList>` and `shrink-0 min-w-[110px]` to `<TabsTrigger>` elements, and hide the X close button on mobile using responsive Tailwind classes.
+**Architecture:** Update the container of `ControlDrawer.tsx` to slide *over* the main layout absolutely on mobile viewports using `absolute lg:relative`. Hide the pill border toggle button on mobile using Tailwind's responsive visibility classes.
 
 **Tech Stack:** React, Next.js, Tailwind CSS, shadcn/ui.
 
@@ -15,139 +15,51 @@
 
 ---
 
-### Task 1: Unify Top Navigation Tab Icons
+### Task 1: Absolute Overlay Left Control Drawer
 
 **Files:**
-* Modify: [DashboardClient.tsx](../../../frontend/src/components/DashboardClient.tsx)
+* Modify: [ControlDrawer.tsx](../../../frontend/src/components/ControlDrawer.tsx)
 
-- [ ] **Step 1: Import Tv and Brain icons**
+- [ ] **Step 1: Set drawer motion container to absolute on mobile**
 
-Modify imports list in [DashboardClient.tsx](../../../frontend/src/components/DashboardClient.tsx) around line 3 to include `Brain` and `Tv` from `lucide-react`:
-
-```typescript
-import {
-	AlertCircle,
-	BookOpen,
-	Brain,
-	BrainCircuit,
-	Eye,
-	EyeOff,
-	Key,
-	Library,
-	Lock,
-	Menu,
-	Settings as SettingsIcon,
-	Trash2,
-	Tv,
-	Unlock,
-	X,
-} from "lucide-react";
-```
-
-- [ ] **Step 2: Update mobile tab triggers to use unified Lucide icons**
-
-Modify the mobile `<TabsList>` triggers in [DashboardClient.tsx](../../../frontend/src/components/DashboardClient.tsx) around line 440 to render Lucide icons instead of emojis:
+Modify [ControlDrawer.tsx](../../../frontend/src/components/ControlDrawer.tsx) around line 189 to set absolute positioning on mobile viewports:
 
 ```tsx
-								<TabsList className="grid w-full grid-cols-2 bg-zinc-900/30 border border-zinc-800/40 backdrop-blur-md rounded-lg">
-									<TabsTrigger value="workspace" className="text-xs font-semibold py-2 flex items-center justify-center gap-1.5">
-										<Tv className="w-4 h-4 text-cyan-400" />
-										<span>{locale === "ar" ? "الدردشة والتشغيل" : "Play & Chat"}</span>
-									</TabsTrigger>
-									<TabsTrigger value="studystudio" className="text-xs font-semibold py-2 flex items-center justify-center gap-1.5">
-										<Brain className="w-4 h-4 text-cyan-400" />
-										<span>{locale === "ar" ? "استوديو الدراسة" : "StudyStudio"}</span>
-									</TabsTrigger>
-								</TabsList>
+		<motion.div
+			animate={{ width: isOpen ? 320 : 0 }}
+			transition={{ type: "spring", stiffness: 220, damping: 26 }}
+			className="h-full border-r border-zinc-200 dark:border-zinc-800/40 bg-white/80 dark:bg-zinc-950/40 backdrop-blur-2xl flex flex-col absolute lg:relative top-0 bottom-0 left-0 lg:top-auto lg:bottom-auto lg:left-auto shrink-0 z-45 lg:z-40 overflow-visible transition-colors duration-300 shadow-2xl lg:shadow-none"
+		>
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 2: Hide the drag border pill toggle handle on mobile**
 
-Run:
-```bash
-git add frontend/src/components/DashboardClient.tsx
-git commit -m "chore(mobile): unify top workspace switcher icons using Lucide Tv and Brain"
-```
-Expected: Commit successfully created locally.
-
----
-
-### Task 2: Implement Scrollable StudyStudio Sub-tabs & Hide Close Button
-
-**Files:**
-* Modify: [StudyStudio.tsx](../../../frontend/src/components/StudyStudio.tsx)
-
-- [ ] **Step 1: Import Radio and Network icons if missing**
-
-Ensure `Radio` and `Network` icons are imported from `lucide-react` at the top of [StudyStudio.tsx](../../../frontend/src/components/StudyStudio.tsx).
-
-- [ ] **Step 2: Hide StudyStudio Close Button on Mobile**
-
-Modify [StudyStudio.tsx](../../../frontend/src/components/StudyStudio.tsx) close button around line 835 to add `hidden lg:flex` to its class:
+Modify the collapse pill button at the bottom of [ControlDrawer.tsx](../../../frontend/src/components/ControlDrawer.tsx) (around line 422) to hide it on screens below `lg`:
 
 ```tsx
-						{/* Close Panel Button */}
-						<button
-							type="button"
-							onClick={onToggleOpen}
-							className="hidden lg:flex p-1.5 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors duration-300"
-							title={locale === "ar" ? "إغلاق" : "Close"}
-						>
-							<X className="w-4 h-4" />
-						</button>
+			{/* Expand/Collapse border toggle handle button */}
+			<button
+				type="button"
+				onClick={onToggleOpen}
+				className={`hidden lg:flex absolute top-1/2 -translate-y-1/2 z-50 w-5 h-10 rounded-full border border-zinc-800/80 bg-zinc-950/90 text-zinc-400 hover:text-white transition shadow-md items-center justify-center ${
+					isRtl ? "left-[-10px]" : "right-[-10px]"
+				}`}
+			>
 ```
 
-- [ ] **Step 3: Make Sub-tabs scrollable on mobile**
-
-Modify [StudyStudio.tsx](../../../frontend/src/components/StudyStudio.tsx) tab list and tab triggers around line 857:
-
-```tsx
-					{/* Sub-tab selection */}
-					<TabsList className="w-full flex overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] border-b border-zinc-200 dark:border-zinc-800/40 p-1 bg-zinc-100/50 dark:bg-zinc-950/30 gap-1 shrink-0 rounded-none bg-transparent">
-						<TabsTrigger
-							value="outline"
-							className="flex-1 shrink-0 min-w-[110px] md:min-w-0 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition data-active:!bg-cyan-500/10 data-active:!text-cyan-700 dark:data-active:!text-cyan-400 data-active:!border data-active:!border-cyan-500/20 text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200"
-						>
-							<BookOpen className="w-3.5 h-3.5" />
-							{t.outlineTab}
-						</TabsTrigger>
-						<TabsTrigger
-							value="podcast"
-							className="flex-1 shrink-0 min-w-[110px] md:min-w-0 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition data-active:!bg-cyan-500/10 data-active:!text-cyan-700 dark:data-active:!text-cyan-400 data-active:!border data-active:!border-cyan-500/20 text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200"
-						>
-							<Radio className="w-3.5 h-3.5" />
-							{t.podcastTab}
-						</TabsTrigger>
-						<TabsTrigger
-							value="mindmap"
-							className="flex-1 shrink-0 min-w-[110px] md:min-w-0 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition data-active:!bg-cyan-500/10 data-active:!text-cyan-700 dark:data-active:!text-cyan-400 data-active:!border data-active:!border-cyan-500/20 text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200"
-						>
-							<Network className="w-3.5 h-3.5" />
-							{t.conceptMapTab}
-						</TabsTrigger>
-						<TabsTrigger
-							value="notes"
-							className="flex-1 shrink-0 min-w-[110px] md:min-w-0 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition data-active:!bg-cyan-500/10 data-active:!text-cyan-700 dark:data-active:!text-cyan-400 data-active:!border data-active:!border-cyan-500/20 text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-200"
-						>
-							<PenTool className="w-3.5 h-3.5" />
-							{t.notesTab}
-						</TabsTrigger>
-					</TabsList>
-```
-
-- [ ] **Step 4: Run format & lint**
+- [ ] **Step 3: Run Biome format and lint**
 
 Run:
 ```bash
 pnpm format; pnpm lint
 ```
-Expected: formatting completes cleanly.
+Expected: formatting and linting completed successfully.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 Run:
 ```bash
-git add frontend/src/components/StudyStudio.tsx
-git commit -m "feat(mobile): make studystudio sub-tabs scrollable and hide close button"
+git add frontend/src/components/ControlDrawer.tsx
+git commit -m "feat(mobile): set left drawer to absolute overlay and hide border pill toggle handle on mobile"
 ```
 Expected: Commit successfully created locally.
