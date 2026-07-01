@@ -25,6 +25,7 @@ import ControlDrawer from "@/components/ControlDrawer";
 import MatrixCanvas from "@/components/MatrixCanvas";
 import { ModeToggle } from "@/components/ModeToggle";
 import StudyStudio from "@/components/StudyStudio";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
 	ResizableHandle,
