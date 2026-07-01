@@ -29,12 +29,25 @@ A high-performance FastAPI server optimized for serverless deployments (such as 
 
 ## Database Migrations & Boot Execution
 
-To ensure seamless serverless deployments (such as FastAPI Cloud), the database schema is updated automatically on boot:
+To ensure seamless serverless deployments (such as FastAPI Cloud), the database schema is managed via **Alembic in Raw SQL mode** and updated automatically on boot:
 
 1. **Lifespan Boot Executor:** During FastAPI startup, the `lifespan` handler executes [run_migrations.py](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/backend/scripts/run_migrations.py).
-2. **SHA-256 Hash Tracking:** The migration runner computes the SHA-256 hash of [01_init_schema.sql](file:///c:/Users/hp/Desktop/gab/git%20projects/tube-rag-fullstack/backend/migrations/01_init_schema.sql) and checks it against `public.migration_history`:
-   * If the hashes match, the script exits immediately (taking <2ms, bypassing redundant SQL executions and avoiding locking issues).
-   * If the hash changes, it applies the SQL changes and updates the migration history table.
+2. **Programmatic Alembic Upgrade:** The migration runner calls Alembic's programmatic API `command.upgrade(alembic_cfg, "head")` to apply any new versioned python migration scripts under `alembic_migrations/versions/`.
+3. **Database Tracking:** Alembic automatically tracks executed migrations in an `alembic_version` table inside Supabase, preventing duplicate runs and supporting standard database rollbacks.
+4. **Automatic Safety Backups:** Before any migration is run online (both upgrade and downgrade), Alembic automatically dumps the current state of `videos`, `playlists`, `playlist_videos`, and `video_chunks` into a timestamped JSON file located under `backend/migrations_backups/`.
+5. **Restoring from Backups:** To restore the database tables and computed embeddings from the latest JSON backup file:
+   ```bash
+   uv run python -m scripts.restore_from_backup
+   ```
+   Or restore a specific backup file:
+   ```bash
+   uv run python -m scripts.restore_from_backup --file migrations_backups/backup_20260701_053000.json
+   ```
+6. **Creating new migrations:** To create a new incremental database change:
+   ```bash
+   uv run alembic revision -m "add_my_new_column"
+   ```
+   Open the generated python file under `alembic_migrations/versions/` and add your raw DDL statements inside `op.execute()` in the `upgrade()` and `downgrade()` functions.
 
 ---
 

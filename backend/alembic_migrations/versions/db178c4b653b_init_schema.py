@@ -1,3 +1,28 @@
+"""init_schema
+
+Revision ID: db178c4b653b
+Revises:
+Create Date: 2026-07-01 04:56:59.910359
+
+"""
+
+from collections.abc import Sequence
+
+from alembic import op
+
+# revision identifiers, used by Alembic.
+revision: str = "db178c4b653b"
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
+
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    op.execute("""
+-- Clean up old custom migration table if it exists
+drop table if exists public.migration_history cascade;
+
 -- Enable pgvector and pg_trgm extensions
 create extension if not exists vector;
 create extension if not exists pg_trgm;
@@ -5,7 +30,7 @@ create extension if not exists pg_trgm;
 -- Videos table
 create table if not exists public.videos (
     id uuid default gen_random_uuid() primary key,
-    user_id uuid references auth.users(id) on delete cascade not null,
+    user_id uuid not null,
     youtube_id varchar(255) not null,
     title text,
     channel_name varchar(255),
@@ -22,7 +47,7 @@ create table if not exists public.videos (
 -- Playlists table
 create table if not exists public.playlists (
     id uuid default gen_random_uuid() primary key,
-    user_id uuid references auth.users(id) on delete cascade not null,
+    user_id uuid not null,
     name varchar(255) not null,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
     unique(user_id, name)
@@ -117,7 +142,6 @@ end;
 $$;
 
 -- Enable Realtime for the videos table (safely bypasses environments without Supabase Realtime publications)
-begin;
 do $$
 begin
     if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
@@ -133,4 +157,21 @@ begin
         end if;
     end if;
 end $$;
-commit;
+
+-- Disable Row Level Security (RLS) by default to prevent API 401 violations
+alter table if exists public.videos disable row level security;
+alter table if exists public.playlists disable row level security;
+alter table if exists public.playlist_videos disable row level security;
+alter table if exists public.video_chunks disable row level security;
+    """)
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    op.execute("""
+        drop function if exists public.hybrid_search(text, vector, uuid, int, int);
+        drop table if exists public.playlist_videos cascade;
+        drop table if exists public.video_chunks cascade;
+        drop table if exists public.playlists cascade;
+        drop table if exists public.videos cascade;
+    """)

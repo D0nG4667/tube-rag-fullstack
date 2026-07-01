@@ -20,6 +20,7 @@ dependencies = [
     "fastapi-cli>=0.0.20",
     "yt-dlp>=2026.6.9",
     "sentry-sdk>=2.63.0",
+    "alembic>=1.13.0",
 ]
 
 [dependency-groups]
