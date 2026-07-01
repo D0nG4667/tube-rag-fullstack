@@ -312,6 +312,10 @@ Formatting Rules:
 *   All cards employ `backdrop-blur-md bg-zinc-950/40 border border-zinc-800/50`.
 *   Hovering over citation badges activates an animated preview popover using Framer Motion, pre-fetching and rendering the WebP slide thumbnail from Supabase Storage.
 
+### 3. Headless UI Stack Selection (Base UI & Radix UI)
+*   **Base UI (`@base-ui/react`):** Used as the foundational headless component architecture for tabs, dialogs, and sheets. It is optimized for React 19, allows total style control using vanilla Tailwind, and avoids dependency bloating by bundling primitives into a single package.
+*   **Radix UI (`@radix-ui/react-direction`):** Specifically imported to handle document bidirectionality (LTR/RTL context layout). This enables dynamic, seamless UI adjustment (reversing slides, margins, alignments) when switching between English and Arabic locales.
+
 ---
 
 ## 6. End-to-End Type Safety & CI/CD Pipeline
