@@ -890,7 +890,8 @@ export default function StudyStudio({
 						{/* Tab 1: Presentation Outline */}
 						<TabsContent
 							value="outline"
-							className="absolute inset-0 flex flex-col outline-none"
+							keepMounted
+							className="absolute inset-0 flex flex-col outline-none data-[hidden]:!hidden"
 						>
 							<ScrollArea className="flex-grow min-h-0">
 								<div className="p-4 flex flex-col gap-4">
@@ -940,7 +941,8 @@ export default function StudyStudio({
 						{/* Tab 2: Podcast Script */}
 						<TabsContent
 							value="podcast"
-							className="absolute inset-0 flex flex-col outline-none"
+							keepMounted
+							className="absolute inset-0 flex flex-col outline-none data-[hidden]:!hidden"
 						>
 							<ScrollArea className="flex-grow min-h-0">
 								<div className="p-4 flex flex-col gap-4">
@@ -1137,7 +1139,8 @@ export default function StudyStudio({
 						{/* Tab 3: SVG Interactive Mindmap */}
 						<TabsContent
 							value="mindmap"
-							className="absolute inset-0 flex flex-col outline-none"
+							keepMounted
+							className="absolute inset-0 flex flex-col outline-none data-[hidden]:!hidden"
 						>
 							<ScrollArea className="flex-grow min-h-0">
 								<div className="p-4 flex flex-col gap-4">
@@ -1265,7 +1268,8 @@ export default function StudyStudio({
 						{/* Tab 4: Handwritten Notes */}
 						<TabsContent
 							value="notes"
-							className="absolute inset-0 flex flex-col outline-none"
+							keepMounted
+							className="absolute inset-0 flex flex-col outline-none data-[hidden]:!hidden"
 						>
 							<ScrollArea className="flex-grow min-h-0">
 								<div className="p-4 flex flex-col gap-4">

@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PanelImperativeHandle } from "react-resizable-panels";
+import { cn } from "@/lib/utils";
 import ChatPanel from "@/components/ChatPanel";
 import ControlDrawer from "@/components/ControlDrawer";
 import MatrixCanvas from "@/components/MatrixCanvas";
@@ -62,6 +63,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 	const [isMobile, setIsMobile] = useState(false);
 	const [isLeftOpen, setIsLeftOpen] = useState(true);
 	const [isRightOpen, setIsRightOpen] = useState(true);
+	const [isMobileVideoCollapsed, setIsMobileVideoCollapsed] = useState(false);
 
 	useEffect(() => {
 		setMounted(true);
@@ -517,18 +519,54 @@ export default function DashboardClient({ locale }: { locale: string }) {
 								{/* Tab 1: Video Player & Chat Panel */}
 								<TabsContent
 									value="workspace"
-									className="absolute inset-0 flex flex-col gap-4 overflow-y-auto px-4 pb-4"
+									keepMounted
+									className="absolute inset-0 flex flex-col gap-4 overflow-y-auto px-4 pb-4 data-[hidden]:!hidden"
 								>
 									{/* Video player container */}
-									<div className="flex flex-col gap-4 min-h-[250px] sm:min-h-[300px] shrink-0">
-										<div className="glass-panel p-4 rounded-xl flex-1 flex flex-col justify-center min-h-0">
-											<span className="text-xs text-zinc-500 font-semibold tracking-widest mb-3 block">
-												{t.videoPlayerEngine}
-											</span>
-											<VideoPlayer
-												ref={playerRef}
-												youtubeId={selectedVideo?.youtube_id || ""}
-											/>
+									<div
+										className={cn(
+											"flex flex-col gap-4 shrink-0 transition-all duration-300",
+											isMobileVideoCollapsed
+												? "h-[56px] min-h-[56px]"
+												: "min-h-[250px] sm:min-h-[300px]",
+										)}
+									>
+										<div className="glass-panel p-4 rounded-xl flex-1 flex flex-col min-h-0">
+											<div className="flex items-center justify-between mb-3">
+												<span className="text-xs text-zinc-500 font-semibold tracking-widest uppercase block">
+													{t.videoPlayerEngine}
+												</span>
+												<button
+													type="button"
+													onClick={() =>
+														setIsMobileVideoCollapsed(!isMobileVideoCollapsed)
+													}
+													className="p-1 rounded-md border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition"
+													title={
+														isMobileVideoCollapsed
+															? "Expand Video"
+															: "Collapse Video"
+													}
+												>
+													{isMobileVideoCollapsed ? (
+														<Eye className="w-3.5 h-3.5" />
+													) : (
+														<EyeOff className="w-3.5 h-3.5" />
+													)}
+												</button>
+											</div>
+											<div
+												className={cn(
+													"flex-1 flex flex-col justify-center min-h-0 transition-all duration-300",
+													isMobileVideoCollapsed &&
+														"hidden h-0 opacity-0 pointer-events-none overflow-hidden",
+												)}
+											>
+												<VideoPlayer
+													ref={playerRef}
+													youtubeId={selectedVideo?.youtube_id || ""}
+												/>
+											</div>
 										</div>
 									</div>
 
@@ -548,7 +586,8 @@ export default function DashboardClient({ locale }: { locale: string }) {
 								{/* Tab 2: StudyStudio Panel */}
 								<TabsContent
 									value="studystudio"
-									className="absolute inset-0 flex flex-col px-4 pb-4"
+									keepMounted
+									className="absolute inset-0 flex flex-col px-4 pb-4 data-[hidden]:!hidden"
 								>
 									<div className="flex-1 flex flex-col min-h-0">
 										<StudyStudio
