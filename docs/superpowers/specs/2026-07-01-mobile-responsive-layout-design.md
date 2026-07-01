@@ -14,10 +14,14 @@ Provide a premium, responsive mobile layout for the TubeRAG Workspace Console, r
   * **Active YT ID Badge** -> Hide on mobile/tablet (`hidden md:inline-flex`).
   * **Essential Header:** Only `[Hamburger Menu] Workspace Console` (left) and `[Settings] [Theme]` (right) remain visible on mobile.
 
-### Mobile Drawer Navigation Actions
+### Mobile Drawer Navigation Actions & Overlay Styling
 * **Target File:** [ControlDrawer.tsx](../../../frontend/src/components/ControlDrawer.tsx)
-* **Description:** Append the hidden secondary action links and active video metadata to the bottom of the Left Control Drawer, visible **only** on mobile viewports (`block lg:hidden`).
-* **Elements added:**
+* **Description:** Update the left drawer to slide **over** the content absolutely on mobile, append hidden secondary action links and metadata to the bottom, and hide the redundant drag pill toggle button.
+* **Responsive Layout Styling:**
+  * `<motion.div>`: Change className to use `absolute lg:relative top-0 bottom-0 left-0 lg:top-auto lg:bottom-auto lg:left-auto z-45 lg:z-40 shadow-2xl lg:shadow-none`.
+* **Pill Toggle Button Hiding:**
+  * Collapse pill button: Add `hidden lg:flex` to prevent rendering overlapping handle buttons floating on mobile viewports.
+* **Elements added in Drawer Footer:**
   * Active video YouTube ID indicator.
   * Roadmap link.
   * Language selector switcher.
@@ -52,5 +56,5 @@ Provide a premium, responsive mobile layout for the TubeRAG Workspace Console, r
 ## Verification Plan
 
 ### Manual Verification
-* **Device emulation:** Verify header layout, top tabs unified icons, close button visibility, and sub-tabs swipe/scroll behavior in Chrome DevTools using mobile responsive presets down to `360px` width.
+* **Device emulation:** Verify header layout, top tabs unified icons, close button visibility, absolute drawer overlay, and sub-tabs swipe/scroll behavior in Chrome DevTools using mobile responsive presets down to `360px` width.
 * **Component scrolling:** Verify that both the Chat Panel and StudyStudio tabs scroll properly inside their mobile tab views.
