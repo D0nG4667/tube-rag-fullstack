@@ -20,9 +20,13 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     """Upgrade schema."""
     op.execute("""
+    -- Drop both vector and vector(768) overloads to prevent function signature clashing
+    drop function if exists public.hybrid_search(text, vector, uuid, int, int);
+    drop function if exists public.hybrid_search(text, vector(768), uuid, int, int);
+
     create or replace function public.hybrid_search(
         query_text text,
-        query_embedding vector(768),
+        query_embedding vector,
         target_video_id uuid,
         match_count int,
         rrf_k int default 60
@@ -93,9 +97,13 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     op.execute("""
+    -- Drop both signatures to clean up the function space
+    drop function if exists public.hybrid_search(text, vector, uuid, int, int);
+    drop function if exists public.hybrid_search(text, vector(768), uuid, int, int);
+
     create or replace function public.hybrid_search(
         query_text text,
-        query_embedding vector(768),
+        query_embedding vector,
         target_video_id uuid,
         match_count int,
         rrf_k int default 60

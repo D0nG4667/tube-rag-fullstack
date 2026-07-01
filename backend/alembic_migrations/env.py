@@ -52,62 +52,66 @@ def backup_database_state(connection) -> None:
     import json
     import os
     from datetime import datetime
-
-    from sqlalchemy import text
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
 
     try:
-        # 1. Check if the videos table exists (avoids error on fresh install)
-        result = connection.execute(
-            text(
-                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'videos');"
-            )
-        )
-        if not result.scalar():
+        db_url = settings.DATABASE_URL
+        if not db_url:
             return
 
-        # 2. Fetch all videos
-        videos_res = connection.execute(
-            text(
-                "SELECT id, user_id, youtube_id, title, channel_name, duration, thumbnail_url, status, current_offset, error_message, created_at, updated_at FROM public.videos;"
-            )
-        )
-        videos = [dict(row._mapping) for row in videos_res]
-        if not videos:
-            return
+        # Create an isolated connection to perform the read-only backup,
+        # leaving the Alembic SQLAlchemy connection's transaction state untouched.
+        # This prevents transaction auto-start/rollback conflicts in SQLAlchemy 2.0.
+        with psycopg2.connect(db_url) as conn:
+            with conn.cursor() as cur:
+                # 1. Check if the videos table exists (avoids error on fresh install)
+                cur.execute(
+                    "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'videos');"
+                )
+                if not cur.fetchone()[0]:
+                    return
 
-        # 3. Fetch all playlists
-        playlists_res = connection.execute(
-            text("SELECT id, user_id, name, created_at FROM public.playlists;")
-        )
-        playlists = [dict(row._mapping) for row in playlists_res]
+            with conn.cursor(cursor_factory=RealDictCursor) as dict_cur:
+                # 2. Fetch all videos
+                dict_cur.execute(
+                    "SELECT id, user_id, youtube_id, title, channel_name, duration, thumbnail_url, status, current_offset, error_message, created_at, updated_at FROM public.videos;"
+                )
+                videos = [dict(row) for row in dict_cur.fetchall()]
+                if not videos:
+                    return
 
-        # 4. Fetch all playlist_videos
-        joins_res = connection.execute(
-            text("SELECT playlist_id, video_id FROM public.playlist_videos;")
-        )
-        joins = [dict(row._mapping) for row in joins_res]
+                # 3. Fetch all playlists
+                dict_cur.execute(
+                    "SELECT id, user_id, name, created_at FROM public.playlists;"
+                )
+                playlists = [dict(row) for row in dict_cur.fetchall()]
 
-        # 5. Fetch all video_chunks
-        chunks_res = connection.execute(
-            text(
-                "SELECT id, video_id, content, embedding, start_time, end_time, chunk_type, metadata, image_url, created_at FROM public.video_chunks;"
-            )
-        )
-        chunks = []
-        for row in chunks_res:
-            row_dict = dict(row._mapping)
-            if row_dict.get("embedding") is not None:
-                # Handle potential pgvector string representation: e.g. "[0.1,0.2,...]"
-                if isinstance(row_dict["embedding"], str):
-                    cleaned = row_dict["embedding"].strip("[]").strip()
-                    row_dict["embedding"] = (
-                        [float(x) for x in cleaned.split(",") if x.strip()]
-                        if cleaned
-                        else []
-                    )
-                elif hasattr(row_dict["embedding"], "__iter__"):
-                    row_dict["embedding"] = list(row_dict["embedding"])
-            chunks.append(row_dict)
+                # 4. Fetch all playlist_videos
+                dict_cur.execute(
+                    "SELECT playlist_id, video_id FROM public.playlist_videos;"
+                )
+                joins = [dict(row) for row in dict_cur.fetchall()]
+
+                # 5. Fetch all video_chunks
+                dict_cur.execute(
+                    "SELECT id, video_id, content, embedding, start_time, end_time, chunk_type, metadata, image_url, created_at FROM public.video_chunks;"
+                )
+                chunks = []
+                for row in dict_cur.fetchall():
+                    row_dict = dict(row)
+                    if row_dict.get("embedding") is not None:
+                        # Handle potential pgvector string representation: e.g. "[0.1,0.2,...]"
+                        if isinstance(row_dict["embedding"], str):
+                            cleaned = row_dict["embedding"].strip("[]").strip()
+                            row_dict["embedding"] = (
+                                [float(x) for x in cleaned.split(",") if x.strip()]
+                                if cleaned
+                                else []
+                            )
+                        elif hasattr(row_dict["embedding"], "__iter__"):
+                            row_dict["embedding"] = list(row_dict["embedding"])
+                    chunks.append(row_dict)
 
         # 6. Format non-serializable fields (UUID, datetime)
         def default_serializer(o):
