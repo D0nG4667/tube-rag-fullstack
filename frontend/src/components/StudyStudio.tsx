@@ -654,7 +654,7 @@ export default function StudyStudio({
 	};
 
 	return (
-		<div className="h-full w-full border-l border-zinc-200 dark:border-zinc-800/40 bg-white/80 dark:bg-zinc-950/40 backdrop-blur-2xl flex flex-col relative shrink-0 z-40 overflow-visible transition-colors duration-300">
+		<div className="h-full w-full border-l border-zinc-200 dark:border-zinc-800/40 bg-white/80 dark:bg-zinc-950/40 backdrop-blur-2xl flex flex-col relative min-w-0 z-40 overflow-hidden transition-colors duration-300">
 			{/* Dynamic width Inner Container to prevent squishing text on width resize */}
 			<div
 				className="h-full w-full flex flex-col overflow-hidden"
