@@ -15,6 +15,7 @@ import {
 	Trash2,
 	Tv,
 	Unlock,
+	Loader2,
 	X,
 } from "lucide-react";
 import Link from "next/link";
@@ -26,7 +27,7 @@ import MatrixCanvas from "@/components/MatrixCanvas";
 import { ModeToggle } from "@/components/ModeToggle";
 import StudyStudio from "@/components/StudyStudio";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
 	ResizableHandle,
 	ResizablePanel,
@@ -57,9 +58,14 @@ export default function DashboardClient({ locale }: { locale: string }) {
 	const [isChatFocused, setIsChatFocused] = useState(false);
 	const [isDraggingLayout, setIsDraggingLayout] = useState(false);
 
+	const [mounted, setMounted] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
 	const [isLeftOpen, setIsLeftOpen] = useState(true);
 	const [isRightOpen, setIsRightOpen] = useState(true);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
 	useEffect(() => {
 		const check = () => {
@@ -305,6 +311,14 @@ export default function DashboardClient({ locale }: { locale: string }) {
 		}
 	};
 
+	if (!mounted) {
+		return (
+			<div className="h-screen w-screen flex items-center justify-center bg-zinc-950 text-zinc-400">
+				<Loader2 className="w-6 h-6 animate-spin text-accent-cyan" />
+			</div>
+		);
+	}
+
 	return (
 		<main className="relative h-screen w-full flex text-zinc-800 dark:text-zinc-100 overflow-hidden bg-background">
 			{/* 3D background canvas layer */}
@@ -331,45 +345,47 @@ export default function DashboardClient({ locale }: { locale: string }) {
 				/>
 			)}
 
-			{/* Mobile responsive sidebar drawer using Radix Sheet */}
-			{isMobile && (
-				<Sheet open={isLeftOpen} onOpenChange={setIsLeftOpen}>
-					<SheetContent
-						side="left"
-						className="p-0 border-r border-zinc-200 dark:border-zinc-800/40 bg-zinc-950 w-[320px] h-full"
-					>
-						<ControlDrawer
-							videos={videos}
-							selectedVideoId={selectedVideo?.id || ""}
-							onSelectVideo={(video) => {
-								setSelectedVideo(video);
-								setIsLeftOpen(false);
-							}}
-							onIngestSuccess={fetchVideos}
-							geminiApiKey={geminiApiKey}
-							isOpen={true} // Always open within the sheet modal overlay
-							onToggleOpen={() => setIsLeftOpen(false)}
-							locale={locale}
-							onShowToast={showToast}
-						/>
-					</SheetContent>
-				</Sheet>
-			)}
-
 			{/* Main Core Viewport Split Grid */}
 			<div className="flex-1 flex flex-col p-6 overflow-hidden h-screen gap-6 z-10">
 				{/* Header toolbar */}
 				<header className="flex justify-between items-center glass-panel p-4 rounded-xl shrink-0">
 					<div className="flex items-center gap-2">
-						<button
-							type="button"
-							onClick={() => setIsLeftOpen(!isLeftOpen)}
-							className="lg:hidden p-2 rounded hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 transition"
-							title="Toggle Sources"
-						>
-							<Menu className="w-4 h-4" />
-						</button>
-						<BrainCircuit className="w-5 h-5 text-accent-cyan hidden lg:block" />
+						{isMobile ? (
+							<Sheet open={isLeftOpen} onOpenChange={setIsLeftOpen}>
+								<SheetTrigger
+									render={
+										<button
+											type="button"
+											className="p-2 rounded hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 transition"
+											title="Toggle Sources"
+										>
+											<Menu className="w-4 h-4" />
+										</button>
+									}
+								/>
+								<SheetContent
+									side="left"
+									className="p-0 border-r border-zinc-200 dark:border-zinc-800/40 bg-zinc-950 w-[320px] h-full"
+								>
+									<ControlDrawer
+										videos={videos}
+										selectedVideoId={selectedVideo?.id || ""}
+										onSelectVideo={(video) => {
+											setSelectedVideo(video);
+											setIsLeftOpen(false);
+										}}
+										onIngestSuccess={fetchVideos}
+										geminiApiKey={geminiApiKey}
+										isOpen={true} // Always open within the sheet modal overlay
+										onToggleOpen={() => setIsLeftOpen(false)}
+										locale={locale}
+										onShowToast={showToast}
+									/>
+								</SheetContent>
+							</Sheet>
+						) : (
+							<BrainCircuit className="w-5 h-5 text-accent-cyan" />
+						)}
 						<h1 className="text-xs lg:text-sm font-semibold tracking-wider uppercase text-zinc-800 dark:text-zinc-200">
 							{t.headerTitle}
 						</h1>
