@@ -29,6 +29,7 @@ import {
 	ResizablePanel,
 	ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VideoPlayer, type VideoPlayerRef } from "@/components/VideoPlayer";
 import { decryptApiKey, encryptApiKey } from "@/lib/crypto";
 import { supabase } from "@/lib/supabase";
@@ -440,49 +441,80 @@ export default function DashboardClient({ locale }: { locale: string }) {
 				{/* Viewport & chat splits + StudyStudio */}
 				<div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
 					{isMobile ? (
-						<div className="flex-grow flex flex-col gap-6 overflow-y-auto p-4 min-h-0">
-							{/* Left panel: player container */}
-							<div className="flex flex-col gap-4 min-h-[300px] shrink-0">
-								<div className="glass-panel p-4 rounded-xl flex-1 flex flex-col justify-center min-h-0">
-									<span className="text-xs text-zinc-500 font-semibold tracking-widest mb-3 block">
-										{t.videoPlayerEngine}
-									</span>
-									<VideoPlayer
-										ref={playerRef}
-										youtubeId={selectedVideo?.youtube_id || ""}
-									/>
-								</div>
+						<Tabs
+							defaultValue="workspace"
+							className="flex-grow flex flex-col min-h-0 w-full"
+						>
+							<div className="px-4 shrink-0">
+								<TabsList className="grid w-full grid-cols-2 bg-zinc-900/30 border border-zinc-800/40 backdrop-blur-md rounded-lg">
+									<TabsTrigger
+										value="workspace"
+										className="text-xs font-semibold py-2"
+									>
+										{locale === "ar" ? "📺 الدردشة والتشغيل" : "📺 Play & Chat"}
+									</TabsTrigger>
+									<TabsTrigger
+										value="studystudio"
+										className="text-xs font-semibold py-2"
+									>
+										{locale === "ar" ? "🧠 استوديو الدراسة" : "🧠 StudyStudio"}
+									</TabsTrigger>
+								</TabsList>
 							</div>
 
-							{/* Center panel: Agentic chat module */}
-							<div className="flex flex-col min-h-[400px] shrink-0">
-								<ChatPanel
-									videoId={selectedVideo?.id || ""}
-									onSeek={handleSeek}
-									onFocusChange={setIsChatFocused}
-									geminiApiKey={geminiApiKey}
-									locale={locale}
-									onApiKeyExpired={() => setIsSettingsOpen(true)}
-								/>
-							</div>
+							<div className="flex-1 min-h-0 p-4 relative">
+								{/* Tab 1: Video Player & Chat Panel */}
+								<TabsContent
+									value="workspace"
+									className="absolute inset-0 flex flex-col gap-4 overflow-y-auto px-4 pb-4"
+								>
+									{/* Video player container */}
+									<div className="flex flex-col gap-4 min-h-[250px] sm:min-h-[300px] shrink-0">
+										<div className="glass-panel p-4 rounded-xl flex-1 flex flex-col justify-center min-h-0">
+											<span className="text-xs text-zinc-500 font-semibold tracking-widest mb-3 block">
+												{t.videoPlayerEngine}
+											</span>
+											<VideoPlayer
+												ref={playerRef}
+												youtubeId={selectedVideo?.youtube_id || ""}
+											/>
+										</div>
+									</div>
 
-							{/* Right panel: StudyStudio workspace */}
-							{isRightOpen && (
-								<div className="flex flex-col min-h-[500px] shrink-0">
-									<StudyStudio
-										videoId={selectedVideo?.id || ""}
-										videoTitle={selectedVideo?.title || ""}
-										onSeek={handleSeek}
-										geminiApiKey={geminiApiKey}
-										isOpen={isRightOpen}
-										onToggleOpen={() => setIsRightOpen(!isRightOpen)}
-										locale={locale}
-										onApiKeyExpired={() => setIsSettingsOpen(true)}
-										onShowToast={showToast}
-									/>
-								</div>
-							)}
-						</div>
+									{/* Agentic chat module */}
+									<div className="flex-1 flex flex-col min-h-[350px]">
+										<ChatPanel
+											videoId={selectedVideo?.id || ""}
+											onSeek={handleSeek}
+											onFocusChange={setIsChatFocused}
+											geminiApiKey={geminiApiKey}
+											locale={locale}
+											onApiKeyExpired={() => setIsSettingsOpen(true)}
+										/>
+									</div>
+								</TabsContent>
+
+								{/* Tab 2: StudyStudio Panel */}
+								<TabsContent
+									value="studystudio"
+									className="absolute inset-0 flex flex-col px-4 pb-4"
+								>
+									<div className="flex-1 flex flex-col min-h-0">
+										<StudyStudio
+											videoId={selectedVideo?.id || ""}
+											videoTitle={selectedVideo?.title || ""}
+											onSeek={handleSeek}
+											geminiApiKey={geminiApiKey}
+											isOpen={true}
+											onToggleOpen={() => {}}
+											locale={locale}
+											onApiKeyExpired={() => setIsSettingsOpen(true)}
+											onShowToast={showToast}
+										/>
+									</div>
+								</TabsContent>
+							</div>
+						</Tabs>
 					) : (
 						<ResizablePanelGroup
 							orientation="horizontal"
