@@ -51,6 +51,7 @@ create table if not exists public.video_chunks (
 );
 
 -- Indexes for performance
+create index if not exists video_chunks_embedding_hnsw_idx on public.video_chunks using hnsw (embedding vector_cosine_ops);
 create index if not exists idx_chunks_video_id on public.video_chunks(video_id);
 create index if not exists idx_chunks_fts on public.video_chunks using gin(fts_content);
 create index if not exists idx_chunks_metadata on public.video_chunks using gin(metadata);
@@ -77,20 +78,24 @@ language plpgsql
 as $$
 begin
     return query
-    with vector_search as (
+    with filtered_chunks as materialized (
+        select id, embedding, fts_content, start_time, end_time, chunk_type, image_url, metadata
+        from public.video_chunks
+        where video_id = target_video_id
+    ),
+    vector_search as (
         select 
             id,
             row_number() over (order by embedding <=> query_embedding) as rank
-        from public.video_chunks
-        where video_id = target_video_id
+        from filtered_chunks
         limit match_count * 2
     ),
     fts_search as (
         select 
             id,
             row_number() over (order by ts_rank_cd(fts_content, plainto_tsquery('english', query_text)) desc) as rank
-        from public.video_chunks
-        where video_id = target_video_id and fts_content @@ plainto_tsquery('english', query_text)
+        from filtered_chunks
+        where fts_content @@ plainto_tsquery('english', query_text)
         limit match_count * 2
     )
     select 
@@ -102,7 +107,7 @@ begin
         vc.image_url,
         vc.metadata,
         (coalesce(1.0 / (rrf_k + vs.rank), 0.0) + coalesce(1.0 / (rrf_k + fs.rank), 0.0))::double precision as combined_score
-    from public.video_chunks vc
+    from filtered_chunks vc
     left join vector_search vs on vc.id = vs.id
     left join fts_search fs on vc.id = fs.id
     where vs.id is not null or fs.id is not null
