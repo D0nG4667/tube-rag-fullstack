@@ -35,26 +35,6 @@ async def lifespan(app: FastAPI):
     else:
         start_default_videos_ingestion()
 
-    # Log configuration states securely
-    logger.info(f"FastAPI startup: ENVIRONMENT={settings.ENVIRONMENT}")
-    logger.info(
-        f"FastAPI startup: SUPABASE_URL={'configured' if settings.SUPABASE_URL else 'missing'}"
-    )
-    logger.info(
-        f"FastAPI startup: QSTASH_TOKEN={'configured' if settings.QSTASH_TOKEN else 'missing'}"
-    )
-
-    gemini_key = settings.GEMINI_API_KEY
-    if gemini_key:
-        masked = (
-            f"{gemini_key[:4]}...{gemini_key[-4:]}" if len(gemini_key) > 8 else "***"
-        )
-        logger.info(
-            f"FastAPI startup: GEMINI_API_KEY={masked} (length {len(gemini_key)})"
-        )
-    else:
-        logger.warning("FastAPI startup: GEMINI_API_KEY is missing/empty.")
-
     yield
     # Cleanup handlers go here
     logger.info("FastAPI shutdown: Cleaning up application lifecycle resources.")
