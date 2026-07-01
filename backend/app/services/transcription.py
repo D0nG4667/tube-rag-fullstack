@@ -8,6 +8,7 @@ from google import genai
 from google.genai import types
 
 from app.core.config import settings
+from app.core.helpers import logger
 
 TIMESTAMP_REGEX = re.compile(r"\[?(\d{1,2}:)?(\d{1,2}):(\d{2})\]?")
 
@@ -179,7 +180,7 @@ def download_audio_segment(
         subprocess.run(cmd, check=True)
     except (FileNotFoundError, subprocess.CalledProcessError) as e:
         if settings.ENVIRONMENT == "local":
-            print(
+            logger.warning(
                 f"WARNING: yt-dlp download failed ({e}). Creating dummy audio segment for local development bypass."
             )
             with open(out_path, "wb") as f:

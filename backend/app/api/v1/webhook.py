@@ -149,7 +149,7 @@ def process_video_task(
             save_transcript_and_advance(raw_items)
             return {"status": "ok"}
         except Exception as e:
-            print(f"Native transcript failed: {e}. Attempting Supadata...")
+            logger.info(f"Native transcript failed: {e}. Attempting Supadata...")
 
         # Tier 2: Try Supadata transcript
         if settings.SUPADATA_API_KEY:
@@ -160,11 +160,11 @@ def process_video_task(
                 save_transcript_and_advance(raw_items)
                 return {"status": "ok"}
             except Exception as e_supa:
-                print(
+                logger.info(
                     f"Supadata transcript failed: {e_supa}. Falling back to Gemini transcription..."
                 )
         else:
-            print(
+            logger.info(
                 "Supadata API key not configured. Falling back to Gemini transcription..."
             )
 

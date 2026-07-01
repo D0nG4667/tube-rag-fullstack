@@ -9,6 +9,7 @@ from PIL import Image
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
+from app.core.helpers import logger
 
 
 class SlideAnalysis(BaseModel):
@@ -119,7 +120,7 @@ def download_video_segment(
         from app.core.config import settings
 
         if settings.ENVIRONMENT == "local":
-            print(
+            logger.warning(
                 f"WARNING: yt-dlp video segment download failed ({e}). Creating dummy video segment for local development bypass."
             )
             with open(out_path, "wb") as f:
