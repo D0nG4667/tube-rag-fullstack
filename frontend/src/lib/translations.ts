@@ -1,6 +1,6 @@
 export const translations = {
 	en: {
-		headerTitle: "TubeRAG / Workspace Console",
+		headerTitle: "Workspace Console",
 		activeYtId: "ACTIVE YT ID",
 		customKeyActive: "Custom Key Active",
 		lockedKey: "Locked Key",
@@ -60,7 +60,7 @@ export const translations = {
 		languageToggle: "ar",
 	},
 	ar: {
-		headerTitle: "TubeRAG / وحدة التحكم",
+		headerTitle: "وحدة التحكم",
 		activeYtId: "معرف يوتيوب النشط",
 		customKeyActive: "المفتاح المخصص نشط",
 		lockedKey: "مفتاح مقفل",
