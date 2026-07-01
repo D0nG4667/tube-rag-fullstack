@@ -28,6 +28,15 @@ if settings.SENTRY_DSN:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Run database migrations on boot (idempotent operations)
+    from scripts.run_migrations import run as run_migrations
+
+    try:
+        run_migrations()
+        logger.info("FastAPI startup: Database migrations executed successfully.")
+    except Exception as e:
+        logger.error(f"FastAPI startup: Database migrations failed: {e}", exc_info=True)
+
     # Startup validation of core APIs
     db_ok = await verify_db_connection()
     if not db_ok:
