@@ -23,10 +23,18 @@ class Settings(BaseSettings):
     QSTASH_CURRENT_SIGNING_KEY: str = ""
     QSTASH_NEXT_SIGNING_KEY: str = ""
     GEMINI_API_KEY: str = ""
+    ALLOW_ORIGINS: str = (
+        "http://localhost:3000,http://127.0.0.1:3000,https://tube-rag.gabcares.xyz"
+    )
     BACKEND_URL: str = "http://localhost:8000"
     SENTRY_DSN: str = ""
     YOUTUBE_PROXY: str = ""
     SUPADATA_API_KEY: str = ""
+
+    @property
+    def allow_origins_list(self) -> list[str]:
+        cleaned = self.ALLOW_ORIGINS.strip("[]\"' ")
+        return [x.strip() for x in cleaned.split(",") if x.strip()]
 
     @field_validator("*", mode="before")
     @classmethod

@@ -58,6 +58,7 @@ Create `.env` inside the `backend/` root folder:
 # Application Settings
 ENVIRONMENT=local
 BACKEND_URL=http://localhost:9000
+ALLOW_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://tube-rag.gabcares.xyz
 
 # Supabase Credentials
 SUPABASE_URL=https://your-project.supabase.co

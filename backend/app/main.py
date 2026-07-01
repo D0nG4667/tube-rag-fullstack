@@ -53,10 +53,18 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="TubeRAG Backend", lifespan=lifespan)
 
 # Add CORS Middleware to enable frontend connection
+allow_origins = settings.allow_origins_list
+allow_credentials = True
+
+# Wildcard origin is incompatible with credentials in the CORS spec.
+# Disable credentials dynamically if "*" is configured to avoid Starlette assertion errors.
+if "*" in allow_origins or (len(allow_origins) == 1 and allow_origins[0] == "*"):
+    allow_credentials = False
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=allow_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
