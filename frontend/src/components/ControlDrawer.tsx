@@ -379,7 +379,8 @@ export default function ControlDrawer({
 						<div className="flex items-center gap-2 text-xs bg-zinc-100/60 dark:bg-zinc-900/60 px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-800/80">
 							<Library className="w-3.5 h-3.5 text-accent-cyan" />
 							<span className="font-mono text-zinc-600 dark:text-zinc-400">
-								{t.activeYtId}: {selectedVideoId}
+								{t.activeYtId}:{" "}
+								{videos.find((v) => v.id === selectedVideoId)?.youtube_id || ""}
 							</span>
 						</div>
 					)}
