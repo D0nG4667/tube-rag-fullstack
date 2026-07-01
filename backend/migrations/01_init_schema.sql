@@ -51,7 +51,6 @@ create table if not exists public.video_chunks (
 );
 
 -- Indexes for performance
-create index if not exists video_chunks_embedding_hnsw_idx on public.video_chunks using hnsw (embedding vector_cosine_ops);
 create index if not exists idx_chunks_video_id on public.video_chunks(video_id);
 create index if not exists idx_chunks_fts on public.video_chunks using gin(fts_content);
 create index if not exists idx_chunks_metadata on public.video_chunks using gin(metadata);
@@ -111,3 +110,22 @@ begin
     limit match_count;
 end;
 $$;
+
+-- Enable Realtime for the videos table (safely bypasses environments without Supabase Realtime publications)
+begin;
+do $$
+begin
+    if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+        -- Check if the table is already in the publication to prevent duplicate errors
+        if not exists (
+            select 1 
+            from pg_publication_tables 
+            where pubname = 'supabase_realtime' 
+              and schemaname = 'public' 
+              and tablename = 'videos'
+        ) then
+            alter publication supabase_realtime add table public.videos;
+        end if;
+    end if;
+end $$;
+commit;

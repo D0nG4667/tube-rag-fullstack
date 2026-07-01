@@ -46,6 +46,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 
 	const [videos, setVideos] = useState<VideoNode[]>([]);
 	const [selectedVideo, setSelectedVideo] = useState<VideoNode | null>(null);
+	const [isRealtimeActive, setIsRealtimeActive] = useState(true);
 	const playerRef = useRef<VideoPlayerRef>(null);
 	const rightPanelRef = useRef<PanelImperativeHandle>(null);
 
@@ -268,22 +269,37 @@ export default function DashboardClient({ locale }: { locale: string }) {
 					fetchVideos();
 				},
 			)
-			.subscribe();
+			.subscribe((status) => {
+				setIsRealtimeActive(status === "SUBSCRIBED");
+			});
 
 		return () => {
 			supabase.removeChannel(channel);
 		};
 	}, [fetchVideos]);
 
+	const hasActiveJob = videos.some(
+		(vid) => vid.status !== "completed" && vid.status !== "failed",
+	);
+
+	// Polling fallback when there is an active ingestion job AND supabase realtime connection is down
+	useEffect(() => {
+		if (!hasActiveJob || isRealtimeActive) return;
+
+		const interval = setInterval(() => {
+			fetchVideos();
+		}, 5000); // Failover poll every 5 seconds
+
+		return () => {
+			clearInterval(interval);
+		};
+	}, [hasActiveJob, isRealtimeActive, fetchVideos]);
+
 	const handleSeek = (seconds: number) => {
 		if (playerRef.current) {
 			playerRef.current.seekTo(seconds);
 		}
 	};
-
-	const hasActiveJob = videos.some(
-		(vid) => vid.status !== "completed" && vid.status !== "failed",
-	);
 
 	return (
 		<main className="relative h-screen w-full flex text-zinc-800 dark:text-zinc-100 overflow-hidden bg-background">
