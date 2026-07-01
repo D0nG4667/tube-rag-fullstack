@@ -25,7 +25,7 @@ import ControlDrawer from "@/components/ControlDrawer";
 import MatrixCanvas from "@/components/MatrixCanvas";
 import { ModeToggle } from "@/components/ModeToggle";
 import StudyStudio from "@/components/StudyStudio";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
 	ResizableHandle,
 	ResizablePanel,
@@ -313,29 +313,46 @@ export default function DashboardClient({ locale }: { locale: string }) {
 				isFocused={isChatFocused}
 			/>
 
-			<ControlDrawer
-				videos={videos}
-				selectedVideoId={selectedVideo?.id || ""}
-				onSelectVideo={(video) => {
-					setSelectedVideo(video);
-					if (isMobile) setIsLeftOpen(false);
-				}}
-				onIngestSuccess={fetchVideos}
-				geminiApiKey={geminiApiKey}
-				isOpen={isLeftOpen}
-				onToggleOpen={() => setIsLeftOpen(!isLeftOpen)}
-				locale={locale}
-				onShowToast={showToast}
-			/>
-
-			{/* Mobile Backdrop Overlay */}
-			{isMobile && isLeftOpen && (
-				<button
-					type="button"
-					onClick={() => setIsLeftOpen(false)}
-					className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 w-full h-full cursor-default"
-					aria-label="Close menu"
+			{/* Desktop collapsible left drawer control */}
+			{!isMobile && (
+				<ControlDrawer
+					videos={videos}
+					selectedVideoId={selectedVideo?.id || ""}
+					onSelectVideo={(video) => {
+						setSelectedVideo(video);
+					}}
+					onIngestSuccess={fetchVideos}
+					geminiApiKey={geminiApiKey}
+					isOpen={isLeftOpen}
+					onToggleOpen={() => setIsLeftOpen(!isLeftOpen)}
+					locale={locale}
+					onShowToast={showToast}
 				/>
+			)}
+
+			{/* Mobile responsive sidebar drawer using Radix Sheet */}
+			{isMobile && (
+				<Sheet open={isLeftOpen} onOpenChange={setIsLeftOpen}>
+					<SheetContent
+						side="left"
+						className="p-0 border-r border-zinc-200 dark:border-zinc-800/40 bg-zinc-950 w-[320px] h-full"
+					>
+						<ControlDrawer
+							videos={videos}
+							selectedVideoId={selectedVideo?.id || ""}
+							onSelectVideo={(video) => {
+								setSelectedVideo(video);
+								setIsLeftOpen(false);
+							}}
+							onIngestSuccess={fetchVideos}
+							geminiApiKey={geminiApiKey}
+							isOpen={true} // Always open within the sheet modal overlay
+							onToggleOpen={() => setIsLeftOpen(false)}
+							locale={locale}
+							onShowToast={showToast}
+						/>
+					</SheetContent>
+				</Sheet>
 			)}
 
 			{/* Main Core Viewport Split Grid */}
