@@ -3,6 +3,7 @@
 import {
 	AlertCircle,
 	BookOpen,
+	Brain,
 	BrainCircuit,
 	Eye,
 	EyeOff,
@@ -12,6 +13,7 @@ import {
 	Menu,
 	Settings as SettingsIcon,
 	Trash2,
+	Tv,
 	Unlock,
 	X,
 } from "lucide-react";
@@ -449,15 +451,17 @@ export default function DashboardClient({ locale }: { locale: string }) {
 								<TabsList className="grid w-full grid-cols-2 bg-zinc-900/30 border border-zinc-800/40 backdrop-blur-md rounded-lg">
 									<TabsTrigger
 										value="workspace"
-										className="text-xs font-semibold py-2"
+										className="text-xs font-semibold py-2 flex items-center justify-center gap-1.5"
 									>
-										{locale === "ar" ? "📺 الدردشة والتشغيل" : "📺 Play & Chat"}
+										<Tv className="w-3.5 h-3.5 text-cyan-450" />
+										<span>{locale === "ar" ? "الدردشة والتشغيل" : "Play & Chat"}</span>
 									</TabsTrigger>
 									<TabsTrigger
 										value="studystudio"
-										className="text-xs font-semibold py-2"
+										className="text-xs font-semibold py-2 flex items-center justify-center gap-1.5"
 									>
-										{locale === "ar" ? "🧠 استوديو الدراسة" : "🧠 StudyStudio"}
+										<Brain className="w-3.5 h-3.5 text-cyan-450" />
+										<span>{locale === "ar" ? "استوديو الدراسة" : "StudyStudio"}</span>
 									</TabsTrigger>
 								</TabsList>
 							</div>
