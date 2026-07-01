@@ -346,7 +346,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 					</div>
 					<div className="flex items-center gap-4">
 						{selectedVideo && (
-							<div className="flex items-center gap-2 text-xs bg-zinc-100/60 dark:bg-zinc-900/60 px-3 py-1 rounded border border-zinc-200 dark:border-zinc-800/80">
+							<div className="hidden md:flex items-center gap-2 text-xs bg-zinc-100/60 dark:bg-zinc-900/60 px-3 py-1 rounded border border-zinc-200 dark:border-zinc-800/80">
 								<Library className="w-3.5 h-3.5 text-accent-cyan" />
 								<span className="font-mono text-zinc-600 dark:text-zinc-400">
 									{t.activeYtId}: {selectedVideo.youtube_id}
@@ -356,12 +356,12 @@ export default function DashboardClient({ locale }: { locale: string }) {
 						{geminiApiKey ? (
 							<div className="flex items-center gap-1.5 text-xs bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded border border-emerald-500/20">
 								<Key className="w-3.5 h-3.5" />
-								<span>{t.customKeyActive}</span>
+								<span className="hidden sm:inline">{t.customKeyActive}</span>
 							</div>
 						) : hasSavedKey ? (
 							<div className="flex items-center gap-1.5 text-xs bg-amber-950/20 text-amber-600 dark:text-amber-400 px-3 py-1 rounded border border-amber-500/20">
 								<Lock className="w-3.5 h-3.5" />
-								<span>{t.lockedKey}</span>
+								<span className="hidden sm:inline">{t.lockedKey}</span>
 							</div>
 						) : null}
 
@@ -378,7 +378,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 						{/* Dark/Light mode toggle */}
 						<ModeToggle />
 
-						{/* Toggle StudyStudio Panel */}
+						{/* Toggle StudyStudio Panel (Desktop Only) */}
 						<button
 							type="button"
 							onClick={() => {
@@ -388,7 +388,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 									rightPanelRef.current?.expand();
 								}
 							}}
-							className={`p-1.5 rounded-full border transition-all duration-300 ${
+							className={`hidden lg:inline-flex p-1.5 rounded-full border transition-all duration-300 ${
 								isRightOpen
 									? "border-cyan-300 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-950/20 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-950/40"
 									: "border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
@@ -400,24 +400,25 @@ export default function DashboardClient({ locale }: { locale: string }) {
 							<BookOpen className="w-4 h-4" />
 						</button>
 
-						{/* Roadmap Link */}
+						{/* Roadmap Link (Desktop Only) */}
 						<Link
 							href={`/${locale}/roadmap`}
-							className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition"
+							className="hidden lg:flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition"
 							title={locale === "ar" ? "خريطة الطريق" : "Roadmap"}
 						>
 							<BrainCircuit className="w-3.5 h-3.5 text-accent-cyan" />
 							<span>{locale === "ar" ? "خريطة الطريق" : "Roadmap"}</span>
 						</Link>
 
-						{/* Language Switch Toggle Component (Client routed Link) */}
+						{/* Language Switch Toggle Component (Desktop Only) */}
 						<Link
 							href={locale === "en" ? "/ar" : "/en"}
-							className="text-xs font-semibold px-3 py-1.5 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition"
+							className="hidden lg:flex text-xs font-semibold px-3 py-1.5 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition"
 						>
 							{t.languageLabel}
 						</Link>
 
+						{/* Coffee Link (Desktop Only) */}
 						<a
 							href={
 								process.env.NEXT_PUBLIC_COFFEE_URL ||
@@ -425,7 +426,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 							}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border border-cyan-300 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-950/20 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-950/40 hover:shadow-[0_0_12px_rgba(6,182,212,0.3)] transition-all duration-300"
+							className="hidden lg:flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border border-cyan-300 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-950/20 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-950/40 hover:shadow-[0_0_12px_rgba(6,182,212,0.3)] transition-all duration-300"
 						>
 							<span className="relative flex h-2 w-2">
 								<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
