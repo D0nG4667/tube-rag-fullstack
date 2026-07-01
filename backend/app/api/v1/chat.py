@@ -9,6 +9,7 @@ from supabase import Client as SupabaseClient
 from app.core.config import Settings, get_settings
 from app.core.database import get_supabase
 from app.core.exceptions import is_gemini_quota_error
+from app.core.helpers import logger
 from app.schemas import ChatRequest
 from app.services.prompts import (
     HYDE_SYSTEM_INSTRUCTION,
@@ -90,6 +91,11 @@ def run_chat_rag(
 ):
     if db is None:
         raise HTTPException(status_code=500, detail="Database client is not configured")
+
+    logger.info(
+        f"Chat query: message='{req.message[:30]}...', video_id={req.video_id}, "
+        f"has_client_key={bool(x_gemini_api_key)}, has_server_key={bool(settings.GEMINI_API_KEY)}"
+    )
 
     # If the video ID is not a valid UUID (e.g. mock-id-1), return a clean mock response structure
     if not is_valid_uuid(req.video_id):
