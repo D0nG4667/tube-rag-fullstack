@@ -3,16 +3,19 @@
 import { motion } from "framer-motion";
 import {
 	AlertTriangle,
+	BrainCircuit,
 	ChevronLeft,
 	ChevronRight,
 	Film,
 	Folder,
+	Library,
 	Loader2,
 	Plus,
 	Search,
 	Trash2,
 	X,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import Footer from "@/components/Footer";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -369,6 +372,49 @@ export default function ControlDrawer({
 						)}
 					</div>
 				</ScrollArea>
+
+				{/* Mobile-only Actions Footer (Visible only below lg screen width) */}
+				<div className="lg:hidden p-4 border-t border-zinc-200 dark:border-zinc-800/60 bg-zinc-950/20 backdrop-blur-md flex flex-col gap-3 shrink-0">
+					{selectedVideoId && (
+						<div className="flex items-center gap-2 text-xs bg-zinc-100/60 dark:bg-zinc-900/60 px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-800/80">
+							<Library className="w-3.5 h-3.5 text-accent-cyan" />
+							<span className="font-mono text-zinc-600 dark:text-zinc-400">
+								{t.activeYtId}: {selectedVideoId}
+							</span>
+						</div>
+					)}
+					<div className="grid grid-cols-2 gap-2">
+						<Link
+							href={`/${locale}/roadmap`}
+							className="flex items-center justify-center gap-1.5 text-xs font-semibold py-2 px-3 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300 transition"
+						>
+							<BrainCircuit className="w-3.5 h-3.5 text-accent-cyan" />
+							<span>{locale === "ar" ? "خريطة الطريق" : "Roadmap"}</span>
+						</Link>
+						<Link
+							href={locale === "en" ? "/ar" : "/en"}
+							className="flex items-center justify-center gap-1.5 text-xs font-semibold py-2 px-3 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300 transition"
+						>
+							{t.languageLabel}
+						</Link>
+					</div>
+					<a
+						href={
+							process.env.NEXT_PUBLIC_COFFEE_URL ||
+							"https://sociabuzz.com/gabcares/support"
+						}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="flex items-center justify-center gap-2 text-xs font-semibold py-2 px-4 rounded-full border border-cyan-300 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-950/20 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-950/40 transition-all duration-300"
+					>
+						<span className="relative flex h-2 w-2">
+							<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+							<span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+						</span>
+						{t.buyMeCoffee}
+					</a>
+				</div>
+
 				<Footer locale={locale} minimal />
 			</div>
 
