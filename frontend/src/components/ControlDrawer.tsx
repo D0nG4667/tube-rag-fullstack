@@ -186,7 +186,7 @@ export default function ControlDrawer({
 		<motion.div
 			animate={{ width: isOpen ? 320 : 0 }}
 			transition={{ type: "spring", stiffness: 220, damping: 26 }}
-			className="h-full border-r border-zinc-200 dark:border-zinc-800/40 bg-white/80 dark:bg-zinc-950/40 backdrop-blur-2xl flex flex-col relative shrink-0 z-40 overflow-visible transition-colors duration-300"
+			className="h-full border-r border-zinc-200 dark:border-zinc-800/40 bg-white/80 dark:bg-zinc-950/40 backdrop-blur-2xl flex flex-col absolute lg:relative top-0 bottom-0 left-0 lg:top-auto lg:bottom-auto lg:left-auto shrink-0 z-45 lg:z-40 overflow-visible transition-colors duration-300 shadow-2xl lg:shadow-none"
 		>
 			{/* Fixed-width Inner Container to prevent squishing text on width resize */}
 			<div
@@ -423,7 +423,7 @@ export default function ControlDrawer({
 			<button
 				type="button"
 				onClick={onToggleOpen}
-				className={`absolute top-1/2 -translate-y-1/2 z-50 w-5 h-10 rounded-full border border-zinc-800/80 bg-zinc-950/90 text-zinc-400 hover:text-white transition shadow-md flex items-center justify-center ${
+				className={`hidden lg:flex absolute top-1/2 -translate-y-1/2 z-50 w-5 h-10 rounded-full border border-zinc-800/80 bg-zinc-950/90 text-zinc-400 hover:text-white transition shadow-md items-center justify-center ${
 					isRtl ? "left-[-10px]" : "right-[-10px]"
 				}`}
 			>
