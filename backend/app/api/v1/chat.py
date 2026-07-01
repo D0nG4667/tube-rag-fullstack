@@ -109,6 +109,12 @@ def run_chat_rag(
             ],
         }
 
+    # Enforce Gemini API key for real videos (avoiding silent mock fallback in production)
+    effective_key = x_gemini_api_key or settings.GEMINI_API_KEY
+    if "pytest" not in sys.modules:
+        if not effective_key or effective_key == "your-gemini-api-key":
+            raise HTTPException(status_code=429, detail="GEMINI_API_KEY_REQUIRED")
+
     # 1. Generate HyDE hypothetical paragraph & Embed
     try:
         hyde_text = generate_hyde_paragraph(
