@@ -884,13 +884,13 @@ export default function DashboardClient({ locale }: { locale: string }) {
 						)}
 					>
 						{toastMessage.type === "success" && (
-							<CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 animate-bounce" />
+							<CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0 animate-bounce" />
 						)}
 						{toastMessage.type === "error" && (
-							<XCircle className="w-4 h-4 text-red-400 shrink-0 animate-pulse" />
+							<XCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 animate-pulse" />
 						)}
 						{toastMessage.type === "info" && (
-							<Info className="w-4 h-4 text-cyan-400 shrink-0 animate-pulse" />
+							<Info className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0 animate-pulse" />
 						)}
 						<span>{toastMessage.text}</span>
 					</div>
