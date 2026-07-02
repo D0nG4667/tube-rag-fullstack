@@ -874,13 +874,13 @@ export default function DashboardClient({ locale }: { locale: string }) {
 					<div
 						className={cn(
 							"px-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl flex items-center gap-3 text-xs font-semibold font-sans tracking-wide transition-all duration-300",
-							"bg-zinc-950/85 border-zinc-800/80 text-zinc-100",
+							"bg-white/90 dark:bg-zinc-950/85 border-zinc-200/80 dark:border-zinc-800/80 text-zinc-900 dark:text-zinc-100",
 							toastMessage.type === "success" &&
-								"shadow-[0_0_20px_rgba(34,197,94,0.15)] border-green-500/25",
+								"shadow-[0_0_20px_rgba(34,197,94,0.1)] dark:shadow-[0_0_20px_rgba(34,197,94,0.15)] border-green-500/20 dark:border-green-500/25",
 							toastMessage.type === "error" &&
-								"shadow-[0_0_20px_rgba(239,68,68,0.15)] border-red-500/25",
+								"shadow-[0_0_20px_rgba(239,68,68,0.1)] dark:shadow-[0_0_20px_rgba(239,68,68,0.15)] border-red-500/20 dark:border-red-500/25",
 							toastMessage.type === "info" &&
-								"shadow-[0_0_20px_rgba(8,145,178,0.15)] border-cyan-500/25",
+								"shadow-[0_0_20px_rgba(8,145,178,0.1)] dark:shadow-[0_0_20px_rgba(8,145,178,0.15)] border-cyan-500/20 dark:border-cyan-500/25",
 						)}
 					>
 						{toastMessage.type === "success" && (
