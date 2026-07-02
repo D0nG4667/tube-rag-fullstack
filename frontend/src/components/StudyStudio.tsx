@@ -356,31 +356,48 @@ export default function StudyStudio({
 
 	// Copy to clipboard helper
 	const handleCopy = () => {
-		let shareText = `StudyStudio Insights for: ${videoTitle}\n\n`;
+		let shareText = `========================================\n`;
+		shareText += `📚 TubeRAG StudyStudio Insights\n`;
+		shareText += `🎥 Video: ${videoTitle}\n`;
+		shareText += `========================================\n\n`;
+
 		if (activeTab === "outline" && outline) {
-			shareText += outline;
+			shareText += `📝 LECTURE OUTLINE:\n\n${outline}`;
 		} else if (activeTab === "podcast" && podcastScript.length > 0) {
+			shareText += `🎙️ INTERACTIVE PODCAST SCRIPT:\n\n`;
 			shareText += podcastScript
-				.map((turn) => `${turn.host}: ${turn.text}`)
+				.map((turn) => `👉 ${turn.host.toUpperCase()}:\n"${turn.text}"`)
 				.join("\n\n");
 		} else if (activeTab === "mindmap" && mindmap) {
+			shareText += `🧠 CONCEPT MINDMAP:\n`;
 			shareText += `Subject: ${mindmap.subject}\n\n`;
 			shareText += mindmap.branches
 				.map(
 					(b) =>
-						`- ${b.title}\n` +
-						b.leaves.map((l) => `  * ${l.text} (@ ${l.seconds}s)`).join("\n"),
+						`📂 ${b.title}\n` +
+						b.leaves
+							.map((l) => `  └─ 🏷️ ${l.text} (${formatTime(l.seconds)})`)
+							.join("\n"),
 				)
 				.join("\n\n");
 		} else if (activeTab === "notes" && notes) {
-			shareText += notes;
+			shareText += `✏️ HANDWRITTEN STUDY NOTES:\n\n${notes}`;
 		} else {
 			shareText += "Insights and outlines prepared in StudyStudio.";
 		}
 
+		shareText += `\n\n----------------------------------------\n`;
+		shareText += `🚀 Prepared dynamically in TubeRAG.`;
+
 		navigator.clipboard.writeText(shareText);
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
+		onShowToast?.(
+			isRtl
+				? "📋 تم نسخ النص المنسق بنجاح!"
+				: "📋 Elegantly formatted text copied to clipboard!",
+			"success",
+		);
 	};
 
 	// Download Outline as Markdown
@@ -421,9 +438,7 @@ export default function StudyStudio({
 
 	// Download Mindmap SVG
 	const downloadMindmapSvg = () => {
-		const svgEl =
-			document.querySelector(".mindmap-viewport svg") ||
-			document.querySelector("svg");
+		const svgEl = document.getElementById("mindmap-export-svg");
 		if (!svgEl) return;
 		const serializer = new XMLSerializer();
 		const source = serializer.serializeToString(svgEl);
@@ -563,8 +578,8 @@ export default function StudyStudio({
 		if (activeTab === "outline") {
 			tabTitle = locale === "ar" ? "المخطط التفصيلي" : "Study Outline";
 			contentHtml = `
-				<h1 style="color: #06b6d4; font-size: 24px;">${videoTitle}</h1>
-				<h2 style="color: #4b5563; font-size: 16px;">${tabTitle}</h2>
+				<h1 style="color: #0891b2; font-size: 24px; margin-bottom: 5px;">${videoTitle}</h1>
+				<h2 style="color: #374151; font-size: 16px; margin-top: 0;">${tabTitle}</h2>
 				<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;" />
 				<div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #374151;">${outline || "No outline available."}</div>
 			`;
@@ -574,47 +589,36 @@ export default function StudyStudio({
 				.map(
 					(turn) => `
 				<div style="margin-bottom: 15px; font-size: 13px;">
-					<strong style="color: #7c3aed; text-transform: uppercase;">🎙️ ${turn.host}:</strong>
+					<strong style="color: #6d28d9; text-transform: uppercase;">🎙️ ${turn.host}:</strong>
 					<p style="margin: 4px 0 0 0; line-height: 1.5; color: #374151;">${turn.text}</p>
 				</div>
 			`,
 				)
 				.join("");
 			contentHtml = `
-				<h1 style="color: #06b6d4; font-size: 24px;">${videoTitle}</h1>
-				<h2 style="color: #4b5563; font-size: 16px;">${tabTitle}</h2>
+				<h1 style="color: #0891b2; font-size: 24px; margin-bottom: 5px;">${videoTitle}</h1>
+				<h2 style="color: #374151; font-size: 16px; margin-top: 0;">${tabTitle}</h2>
 				<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;" />
 				${turns || "<p>No podcast script available.</p>"}
 			`;
 		} else if (activeTab === "mindmap") {
 			tabTitle = locale === "ar" ? "خريطة المفاهيم" : "Concept Map";
-			const branches = mindmap
-				? mindmap.branches
-						.map(
-							(b) => `
-				<div style="margin-bottom: 20px;">
-					<h3 style="color: #06b6d4; font-size: 16px; margin: 0 0 8px 0;">📂 ${b.title}</h3>
-					<ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: #374151;">
-						${b.leaves.map((l) => `<li>${l.text} (seek: ${formatTime(l.seconds)})</li>`).join("")}
-					</ul>
-				</div>
-			`,
-						)
-						.join("")
-				: "<p>No concept map available.</p>";
-
+			const svgEl = document.getElementById("mindmap-export-svg");
+			const svgHtml = svgEl ? svgEl.outerHTML : "";
 			contentHtml = `
-				<h1 style="color: #06b6d4; font-size: 24px;">${videoTitle}</h1>
-				<h2 style="color: #4b5563; font-size: 16px;">${tabTitle}: ${mindmap?.subject || ""}</h2>
+				<h1 style="color: #0891b2; font-size: 24px; margin-bottom: 5px;">${videoTitle}</h1>
+				<h2 style="color: #374151; font-size: 16px; margin-top: 0;">${tabTitle}: ${mindmap?.subject || ""}</h2>
 				<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;" />
-				${branches}
+				<div style="width: 100%; display: flex; justify-content: center; background: #09090b; padding: 20px; border-radius: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+					${svgHtml}
+				</div>
 			`;
 		} else if (activeTab === "notes") {
 			tabTitle =
 				locale === "ar" ? "الملاحظات الدراسية" : "Calligraphy Study Notes";
 			contentHtml = `
-				<h1 style="color: #7c3aed; font-size: 24px;">${videoTitle}</h1>
-				<h2 style="color: #4b5563; font-size: 16px;">${tabTitle}</h2>
+				<h1 style="color: #6d28d9; font-size: 24px; margin-bottom: 5px;">${videoTitle}</h1>
+				<h2 style="color: #374151; font-size: 16px; margin-top: 0;">${tabTitle}</h2>
 				<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;" />
 				<div style="font-family: serif; font-size: 18px; line-height: 1.8; color: #1e3a8a; white-space: pre-wrap;">${notes || "No notes available."}</div>
 			`;
@@ -637,10 +641,73 @@ export default function StudyStudio({
 							body { padding: 20px; }
 							h1, h2, h3 { page-break-after: avoid; }
 						}
+						svg {
+							width: 100% !important;
+							height: auto !important;
+							max-height: 100%;
+						}
 					</style>
 				</head>
 				<body>
 					${contentHtml}
+					<script>
+						window.onload = function() {
+							window.print();
+							setTimeout(function() { window.close(); }, 500);
+						};
+					</script>
+				</body>
+			</html>
+		`);
+		printWindow.document.close();
+	};
+
+	// Print only the Mindmap Graph SVG in high-fidelity from Fullscreen Modal
+	const printMindmapGraph = () => {
+		onShowToast?.(
+			isRtl
+				? "🖨️ فتح نافذة طباعة خريطة المفاهيم..."
+				: "🖨️ Opening Mindmap print dialog...",
+			"info",
+		);
+		const svgEl = document.getElementById("mindmap-export-svg");
+		if (!svgEl) return;
+		const printWindow = window.open("", "_blank");
+		if (!printWindow) return;
+
+		const svgHtml = svgEl.outerHTML;
+		const tabTitle = locale === "ar" ? "خريطة المفاهيم" : "Concept Map";
+
+		printWindow.document.write(`
+			<html>
+				<head>
+					<title>${tabTitle} - ${videoTitle}</title>
+					<style>
+						@page {
+							size: landscape;
+							margin: 0;
+						}
+						body {
+							margin: 0;
+							padding: 0;
+							display: flex;
+							align-items: center;
+							justify-content: center;
+							min-height: 100vh;
+							background: #09090b;
+							-webkit-print-color-adjust: exact;
+							print-color-adjust: exact;
+						}
+						svg {
+							width: 95vw !important;
+							height: 95vh !important;
+							max-width: 100%;
+							max-height: 100%;
+						}
+					</style>
+				</head>
+				<body>
+					${svgHtml}
 					<script>
 						window.onload = function() {
 							window.print();
@@ -707,15 +774,21 @@ export default function StudyStudio({
 													? window.location.href
 													: "https://tuberag.vercel.app";
 
-											let shareContext = "a comprehensive study outline";
-											if (activeTab === "podcast")
-												shareContext = "an interactive audio podcast script";
-											else if (activeTab === "mindmap")
-												shareContext = "an interconnected concept mindmap";
-											else if (activeTab === "notes")
-												shareContext = "handwritten calligraphy study notes";
+											const shareContext =
+												activeTab === "podcast"
+													? "podcast script"
+													: activeTab === "mindmap"
+														? "concept mindmap"
+														: activeTab === "notes"
+															? "study notes"
+															: "study outline";
 
-											const xText = `🧠 Synthesized ${shareContext} of "${videoTitle}" using TubeRAG!\n\nCheck it out here: ${shareUrl} 🚀\n\n#AI #SaaS #TubeRAG #NextJS #Gemini`;
+											const truncatedTitle =
+												videoTitle.length > 65
+													? `${videoTitle.substring(0, 62)}...`
+													: videoTitle;
+
+											const xText = `🧠 Synthesized a ${shareContext} of "${truncatedTitle}" using TubeRAG!\n\nCheck it out: ${shareUrl} 🚀\n\n#AI #SaaS #TubeRAG #NextJS #Gemini`;
 											const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(xText)}`;
 											window.open(url, "_blank");
 										}}
@@ -733,13 +806,14 @@ export default function StudyStudio({
 													? window.location.href
 													: "https://tuberag.vercel.app";
 
-											let shareContext = "a comprehensive study outline";
-											if (activeTab === "podcast")
-												shareContext = "an interactive audio podcast script";
-											else if (activeTab === "mindmap")
-												shareContext = "an interconnected concept mindmap";
-											else if (activeTab === "notes")
-												shareContext = "handwritten calligraphy study notes";
+											const shareContext =
+												activeTab === "podcast"
+													? "an interactive audio podcast script"
+													: activeTab === "mindmap"
+														? "an interconnected concept mindmap"
+														: activeTab === "notes"
+															? "handwritten calligraphy study notes"
+															: "a comprehensive study outline";
 
 											const linkedinText = `🚀 Just generated ${shareContext} of "${videoTitle}" using TubeRAG!\n\nTubeRAG synthesizes complex lectures and playlists into structured learning assets:\n📝 Multi-document semantic outline\n🎙️ Interactive audio podcast dialogue\n🧠 Interconnected visual concept maps\n\nPowered by Gemini 2.5 Flash & Supabase pgvector.\n\nExplore the project: https://github.com/tuberag\n\n#ArtificialIntelligence #SaaS #Productivity #EdTech #RAG`;
 
@@ -748,6 +822,12 @@ export default function StudyStudio({
 												.then(() => {
 													setLinkedinCopied(true);
 													setTimeout(() => setLinkedinCopied(false), 2000);
+													onShowToast?.(
+														isRtl
+															? "📋 تم نسخ وصف المنشور! يمكنك لصقه الآن على LinkedIn."
+															: "📋 Post description copied! You can now paste it on LinkedIn.",
+														"success",
+													);
 												})
 												.catch(() => {});
 
@@ -922,7 +1002,7 @@ export default function StudyStudio({
 
 									{outline && !loadingOutline && (
 										<SpotlightPanel className="flex-1 p-4 rounded-xl flex flex-col min-h-0">
-											<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold mb-3 border-b border-zinc-800/60 pb-1.5 block">
+											<span className="text-[10px] text-zinc-400 uppercase tracking-widest font-semibold mb-3 border-b border-zinc-800/60 pb-1.5 block">
 												{t.outlineTab}
 											</span>
 											<div className="text-xs text-zinc-700 dark:text-zinc-300 font-sans">
@@ -1178,7 +1258,7 @@ export default function StudyStudio({
 									{mindmap && !loadingMindmap && (
 										<div className="flex-grow flex flex-col gap-4 min-h-0 relative animate-fade-in ps-6">
 											<div className="flex items-center justify-between border-b border-zinc-800/60 pb-1.5 shrink-0">
-												<span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
+												<span className="text-[10px] text-zinc-400 uppercase tracking-widest font-semibold">
 													{t.conceptMapTab}
 												</span>
 												<div className="flex items-center gap-1.5">
@@ -1393,7 +1473,7 @@ export default function StudyStudio({
 						<div className="flex items-center gap-3">
 							<button
 								type="button"
-								onClick={() => window.print()}
+								onClick={printMindmapGraph}
 								className="px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:text-white hover:bg-zinc-800/80 text-xs font-semibold transition"
 							>
 								{t.downloadPdf}
@@ -1451,15 +1531,21 @@ export default function StudyStudio({
 										</linearGradient>
 									</defs>
 
-									{/* Render Connection Lines */}
+									{/* Premium Dark Theme Background Canvas Rect */}
+									<rect
+										width={svgWidth}
+										height={svgHeight}
+										fill="#09090b"
+										rx={16}
+									/>
+
+									{/* Render Connection Paths */}
 									{links.map((link, idx) => (
-										<line
+										<path
 											// biome-ignore lint/suspicious/noArrayIndexKey: lines order is static
 											key={idx}
-											x1={link.sourceX}
-											y1={link.sourceY}
-											x2={link.targetX}
-											y2={link.targetY}
+											d={link.path}
+											fill="none"
 											stroke={
 												link.type === "root-branch" ? "#06b6d4" : "#4b5563"
 											}
@@ -1599,7 +1685,7 @@ export default function StudyStudio({
 					</p>
 				</div>
 
-				{outline && (
+				{activeTab === "outline" && outline && (
 					<div className="mb-10">
 						<h2 className="text-xl font-bold border-b border-zinc-300 pb-2 mb-4 text-zinc-800 uppercase tracking-wide">
 							I. Lecture Outline
@@ -1610,7 +1696,7 @@ export default function StudyStudio({
 					</div>
 				)}
 
-				{podcastScript.length > 0 && (
+				{activeTab === "podcast" && podcastScript.length > 0 && (
 					<div className="mb-10">
 						<h2 className="text-xl font-bold border-b border-zinc-300 pb-2 mb-4 text-zinc-800 uppercase tracking-wide">
 							II. Podcast Transcript
@@ -1631,7 +1717,7 @@ export default function StudyStudio({
 					</div>
 				)}
 
-				{notes && (
+				{activeTab === "notes" && notes && (
 					<div className="mb-10">
 						<h2 className="text-xl font-bold border-b border-zinc-300 pb-2 mb-4 text-zinc-800 uppercase tracking-wide">
 							III. Calligraphy Study Notes
@@ -1641,22 +1727,480 @@ export default function StudyStudio({
 						</div>
 					</div>
 				)}
+
+				{activeTab === "mindmap" && mindmap && (
+					<div className="mb-10">
+						<h2 className="text-xl font-bold border-b border-zinc-300 pb-2 mb-4 text-zinc-800 uppercase tracking-wide">
+							IV. Concept Mindmap Graph
+						</h2>
+						<div
+							style={{
+								width: "100%",
+								display: "flex",
+								justifyContent: "center",
+								background: "#09090b",
+								padding: "20px",
+								borderRadius: "12px",
+								overflow: "hidden",
+							}}
+						>
+							{(() => {
+								const {
+									nodes,
+									links,
+									width: svgWidth,
+									height: svgHeight,
+								} = getMindmapSvgLayout(mindmap);
+								return (
+									<svg
+										viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+										style={{ width: "100%", height: "auto", maxWidth: "100%" }}
+									>
+										<title>{mindmap.subject}</title>
+										<defs>
+											<filter
+												id="print-glow-report"
+												x="-20%"
+												y="-20%"
+												width="140%"
+												height="140%"
+											>
+												<feGaussianBlur stdDeviation="6" result="blur" />
+												<feComposite
+													in="SourceGraphic"
+													in2="blur"
+													operator="over"
+												/>
+											</filter>
+											<linearGradient
+												id="print-cyan-purple-report"
+												x1="0%"
+												y1="0%"
+												x2="100%"
+												y2="100%"
+											>
+												<stop offset="0%" stopColor="#06b6d4" />
+												<stop offset="100%" stopColor="#7c3aed" />
+											</linearGradient>
+										</defs>
+										<rect
+											width={svgWidth}
+											height={svgHeight}
+											fill="#09090b"
+											rx={16}
+										/>
+										{links.map((link, idx) => (
+											<path
+												// biome-ignore lint/suspicious/noArrayIndexKey: order is static
+												key={`print-report-link-${idx}`}
+												d={link.path}
+												fill="none"
+												stroke={
+													link.type === "root-branch" ? "#06b6d4" : "#4b5563"
+												}
+												strokeWidth={link.type === "root-branch" ? 2.5 : 1.25}
+												strokeDasharray={
+													link.type === "branch-leaf" ? "4,4" : undefined
+												}
+												opacity={link.type === "root-branch" ? 0.7 : 0.4}
+											/>
+										))}
+										{nodes.map((node) => {
+											const isRoot = node.type === "root";
+											const isBranch = node.type === "branch";
+											const isLeaf = node.type === "leaf";
+											return (
+												<g
+													key={`print-report-node-${node.id}`}
+													transform={`translate(${node.x}, ${node.y})`}
+												>
+													{isRoot && (
+														<>
+															<circle
+																r={65}
+																fill="#08070b"
+																stroke="url(#print-cyan-purple-report)"
+																strokeWidth={3}
+																filter="url(#print-glow-report)"
+																opacity={0.8}
+															/>
+															<foreignObject
+																x={-55}
+																y={-45}
+																width={110}
+																height={90}
+															>
+																<div
+																	style={{
+																		width: "100%",
+																		height: "100%",
+																		display: "flex",
+																		alignItems: "center",
+																		justifyContent: "center",
+																		textAlign: "center",
+																		fontSize: "11px",
+																		fontWeight: "bold",
+																		color: "#f4f4f5",
+																		lineHeight: "1.4",
+																		padding: "0 4px",
+																	}}
+																>
+																	{node.label}
+																</div>
+															</foreignObject>
+														</>
+													)}
+													{isBranch && (
+														<>
+															<rect
+																x={-75}
+																y={-22}
+																width={150}
+																height={44}
+																rx={10}
+																fill="#0c0a0f"
+																stroke="#7c3aed"
+																strokeWidth={2}
+																opacity={0.9}
+															/>
+															<foreignObject
+																x={-70}
+																y={-18}
+																width={140}
+																height={36}
+															>
+																<div
+																	style={{
+																		width: "100%",
+																		height: "100%",
+																		display: "flex",
+																		alignItems: "center",
+																		justifyContent: "center",
+																		textAlign: "center",
+																		fontSize: "10px",
+																		fontWeight: "600",
+																		color: "#d8b4fe",
+																		lineHeight: "1.3",
+																		padding: "0 4px",
+																	}}
+																>
+																	{node.label}
+																</div>
+															</foreignObject>
+														</>
+													)}
+													{isLeaf && (
+														<>
+															<rect
+																x={-70}
+																y={-18}
+																width={140}
+																height={36}
+																rx={8}
+																fill="#09090b"
+																stroke="#3f3f46"
+																strokeWidth={1}
+															/>
+															<foreignObject
+																x={-65}
+																y={-14}
+																width={130}
+																height={28}
+															>
+																<div
+																	style={{
+																		width: "100%",
+																		height: "100%",
+																		display: "flex",
+																		flexDirection: "column",
+																		alignItems: "center",
+																		justifyContent: "center",
+																		textAlign: "center",
+																		lineHeight: "1.1",
+																		padding: "0 2px",
+																	}}
+																>
+																	<span
+																		style={{
+																			fontSize: "9px",
+																			color: "#d4d4d8",
+																			fontWeight: "500",
+																			textOverflow: "ellipsis",
+																			whiteSpace: "nowrap",
+																			overflow: "hidden",
+																			width: "100%",
+																		}}
+																	>
+																		{node.label}
+																	</span>
+																	{node.seconds !== undefined && (
+																		<span
+																			style={{
+																				fontSize: "7.5px",
+																				color: "#71717a",
+																				fontFamily: "monospace",
+																				marginTop: "2px",
+																			}}
+																		>
+																			{formatTime(node.seconds)}
+																		</span>
+																	)}
+																</div>
+															</foreignObject>
+														</>
+													)}
+												</g>
+											);
+										})}
+									</svg>
+								);
+							})()}
+						</div>
+					</div>
+				)}
 			</div>
+
+			{/* Hidden SVG for reliable exports of the mindmap */}
+			{mindmap && (
+				<div className="hidden">
+					{(() => {
+						const {
+							nodes,
+							links,
+							width: svgWidth,
+							height: svgHeight,
+						} = getMindmapSvgLayout(mindmap);
+						return (
+							<svg
+								id="mindmap-export-svg"
+								viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+								width={svgWidth}
+								height={svgHeight}
+								xmlns="http://www.w3.org/2000/svg"
+							>
+								<title>{mindmap.subject}</title>
+								<defs>
+									<filter
+										id="export-glow"
+										x="-20%"
+										y="-20%"
+										width="140%"
+										height="140%"
+									>
+										<feGaussianBlur stdDeviation="6" result="blur" />
+										<feComposite
+											in="SourceGraphic"
+											in2="blur"
+											operator="over"
+										/>
+									</filter>
+									<linearGradient
+										id="export-cyan-purple"
+										x1="0%"
+										y1="0%"
+										x2="100%"
+										y2="100%"
+									>
+										<stop offset="0%" stopColor="#06b6d4" />
+										<stop offset="100%" stopColor="#7c3aed" />
+									</linearGradient>
+								</defs>
+
+								{/* Premium Dark Theme Background Canvas Rect */}
+								<rect
+									width={svgWidth}
+									height={svgHeight}
+									fill="#09090b"
+									rx={16}
+								/>
+
+								{/* Render Connection Paths */}
+								{links.map((link, idx) => (
+									<path
+										// biome-ignore lint/suspicious/noArrayIndexKey: order is static
+										key={`export-link-${idx}`}
+										d={link.path}
+										fill="none"
+										stroke={link.type === "root-branch" ? "#06b6d4" : "#4b5563"}
+										strokeWidth={link.type === "root-branch" ? 2.5 : 1.25}
+										strokeDasharray={
+											link.type === "branch-leaf" ? "4,4" : undefined
+										}
+										opacity={link.type === "root-branch" ? 0.7 : 0.4}
+									/>
+								))}
+
+								{/* Render Nodes */}
+								{nodes.map((node) => {
+									const isRoot = node.type === "root";
+									const isBranch = node.type === "branch";
+									const isLeaf = node.type === "leaf";
+
+									return (
+										<g
+											key={`export-node-${node.id}`}
+											transform={`translate(${node.x}, ${node.y})`}
+										>
+											{isRoot && (
+												<>
+													<circle
+														r={65}
+														fill="#08070b"
+														stroke="url(#export-cyan-purple)"
+														strokeWidth={3}
+														filter="url(#export-glow)"
+														opacity={0.8}
+													/>
+													<foreignObject
+														x={-55}
+														y={-45}
+														width={110}
+														height={90}
+													>
+														<div
+															style={{
+																width: "100%",
+																height: "100%",
+																display: "flex",
+																alignItems: "center",
+																justifyContent: "center",
+																textAlign: "center",
+																fontSize: "11px",
+																fontWeight: "bold",
+																color: "#f4f4f5",
+																lineHeight: "1.4",
+																padding: "0 4px",
+																overflow: "hidden",
+															}}
+														>
+															{node.label}
+														</div>
+													</foreignObject>
+												</>
+											)}
+
+											{isBranch && (
+												<>
+													<rect
+														x={-75}
+														y={-22}
+														width={150}
+														height={44}
+														rx={10}
+														fill="#0c0a0f"
+														stroke="#7c3aed"
+														strokeWidth={2}
+														opacity={0.9}
+													/>
+													<foreignObject
+														x={-70}
+														y={-18}
+														width={140}
+														height={36}
+													>
+														<div
+															style={{
+																width: "100%",
+																height: "100%",
+																display: "flex",
+																alignItems: "center",
+																justifyContent: "center",
+																textAlign: "center",
+																fontSize: "10px",
+																fontWeight: "600",
+																color: "#d8b4fe",
+																lineHeight: "1.3",
+																padding: "0 4px",
+																overflow: "hidden",
+															}}
+														>
+															{node.label}
+														</div>
+													</foreignObject>
+												</>
+											)}
+
+											{isLeaf && (
+												<>
+													<rect
+														x={-70}
+														y={-18}
+														width={140}
+														height={36}
+														rx={8}
+														fill="#09090b"
+														stroke="#3f3f46"
+														strokeWidth={1}
+													/>
+													<foreignObject
+														x={-65}
+														y={-14}
+														width={130}
+														height={28}
+													>
+														<div
+															style={{
+																width: "100%",
+																height: "100%",
+																display: "flex",
+																flexDirection: "column",
+																alignItems: "center",
+																justifyContent: "center",
+																textAlign: "center",
+																lineHeight: "1.1",
+																padding: "0 2px",
+																overflow: "hidden",
+															}}
+														>
+															<span
+																style={{
+																	fontSize: "9px",
+																	color: "#d4d4d8",
+																	fontWeight: "500",
+																	textOverflow: "ellipsis",
+																	whiteSpace: "nowrap",
+																	overflow: "hidden",
+																	width: "100%",
+																}}
+															>
+																{node.label}
+															</span>
+															{node.seconds !== undefined && (
+																<span
+																	style={{
+																		fontSize: "7.5px",
+																		color: "#71717a",
+																		fontFamily: "monospace",
+																		marginTop: "2px",
+																	}}
+																>
+																	{formatTime(node.seconds)}
+																</span>
+															)}
+														</div>
+													</foreignObject>
+												</>
+											)}
+										</g>
+									);
+								})}
+							</svg>
+						);
+					})()}
+				</div>
+			)}
 		</div>
 	);
 }
 
 // Fullscreen Mindmap SVG coordinates layout calculator
 function getMindmapSvgLayout(data: MindmapData) {
-	const width = 1000;
-	const height = 700;
+	const width = 1200;
+	const height = 800;
 	const centerX = width / 2;
 	const centerY = height / 2;
-	const radius = 220;
 
 	const branches = data.branches;
-	const branchAngleStep = (2 * Math.PI) / Math.max(1, branches.length);
-
 	const nodes: Array<{
 		id: string;
 		type: "root" | "branch" | "leaf";
@@ -1667,10 +2211,7 @@ function getMindmapSvgLayout(data: MindmapData) {
 	}> = [];
 
 	const links: Array<{
-		sourceX: number;
-		sourceY: number;
-		targetX: number;
-		targetY: number;
+		path: string;
 		type: "root-branch" | "branch-leaf";
 	}> = [];
 
@@ -1683,65 +2224,143 @@ function getMindmapSvgLayout(data: MindmapData) {
 		y: centerY,
 	});
 
-	branches.forEach((branch, bIdx) => {
-		const angle = bIdx * branchAngleStep - Math.PI / 2; // Offset to start at top
-		const branchX = centerX + Math.cos(angle) * radius;
-		const branchY = centerY + Math.sin(angle) * radius;
-		const branchId = `branch-${bIdx}`;
+	// Split branches into Right and Left columns
+	const rightBranches = branches.filter((_, idx) => idx % 2 === 0);
+	const leftBranches = branches.filter((_, idx) => idx % 2 !== 0);
 
-		// Add Branch Node
+	// Helper to calculate total height needed for a column
+	const getColumnHeight = (colBranches: typeof branches) => {
+		let leavesCount = 0;
+		for (const b of colBranches) {
+			leavesCount += Math.max(1, b.leaves.length);
+		}
+		return leavesCount * 60;
+	};
+
+	const rightTotalHeight = getColumnHeight(rightBranches);
+	const leftTotalHeight = getColumnHeight(leftBranches);
+
+	const rightStartY = centerY - rightTotalHeight / 2 + 30;
+	const leftStartY = centerY - leftTotalHeight / 2 + 30;
+
+	// Place Right Side Nodes & Connections
+	let rightLeafIdx = 0;
+	rightBranches.forEach((branch, bIdx) => {
+		const branchId = `branch-r-${bIdx}`;
+		const leavesCount = branch.leaves.length;
+
+		let firstLeafY = 0;
+		let lastLeafY = 0;
+
+		if (leavesCount > 0) {
+			branch.leaves.forEach((leaf, lIdx) => {
+				const leafId = `leaf-r-${bIdx}-${lIdx}`;
+				const leafY = rightStartY + rightLeafIdx * 60;
+				if (lIdx === 0) firstLeafY = leafY;
+				if (lIdx === leavesCount - 1) lastLeafY = leafY;
+
+				nodes.push({
+					id: leafId,
+					type: "leaf",
+					label: leaf.text,
+					x: centerX + 360,
+					y: leafY,
+					seconds: leaf.seconds,
+				});
+				rightLeafIdx++;
+			});
+		} else {
+			const leafY = rightStartY + rightLeafIdx * 60;
+			firstLeafY = leafY;
+			lastLeafY = leafY;
+			rightLeafIdx++;
+		}
+
+		const branchY = (firstLeafY + lastLeafY) / 2;
 		nodes.push({
 			id: branchId,
 			type: "branch",
 			label: `📂 ${branch.title}`,
-			x: branchX,
+			x: centerX + 180,
 			y: branchY,
 		});
 
-		// Link root to branch
+		const rootToBranchPath = `M ${centerX + 65} ${centerY} C ${centerX + 120} ${centerY}, ${centerX + 120} ${branchY}, ${centerX + 180 - 75} ${branchY}`;
 		links.push({
-			sourceX: centerX,
-			sourceY: centerY,
-			targetX: branchX,
-			targetY: branchY,
+			path: rootToBranchPath,
 			type: "root-branch",
 		});
 
-		// Add Leaf Nodes
-		const leaves = branch.leaves;
-		const leavesCount = leaves.length;
-
-		leaves.forEach((leaf, lIdx) => {
-			// Radiate leaves further outward around the branch angle
-			const spreadAngle = 1.0; // total angle spread in radians
-			const leafAngle =
-				leavesCount <= 1
-					? angle
-					: angle - spreadAngle / 2 + (lIdx * spreadAngle) / (leavesCount - 1);
-
-			const leafRadius = radius + 110;
-			const leafX = centerX + Math.cos(leafAngle) * leafRadius;
-			const leafY = centerY + Math.sin(leafAngle) * leafRadius;
-			const leafId = `leaf-${bIdx}-${lIdx}`;
-
-			nodes.push({
-				id: leafId,
-				type: "leaf",
-				label: leaf.text,
-				x: leafX,
-				y: leafY,
-				seconds: leaf.seconds,
+		if (leavesCount > 0) {
+			branch.leaves.forEach((_, lIdx) => {
+				const leafY = rightStartY + (rightLeafIdx - leavesCount + lIdx) * 60;
+				const branchToLeafPath = `M ${centerX + 180 + 75} ${branchY} C ${centerX + 260} ${branchY}, ${centerX + 260} ${leafY}, ${centerX + 360 - 70} ${leafY}`;
+				links.push({
+					path: branchToLeafPath,
+					type: "branch-leaf",
+				});
 			});
+		}
+	});
 
-			// Link branch to leaf
-			links.push({
-				sourceX: branchX,
-				sourceY: branchY,
-				targetX: leafX,
-				targetY: leafY,
-				type: "branch-leaf",
+	// Place Left Side Nodes & Connections
+	let leftLeafIdx = 0;
+	leftBranches.forEach((branch, bIdx) => {
+		const branchId = `branch-l-${bIdx}`;
+		const leavesCount = branch.leaves.length;
+
+		let firstLeafY = 0;
+		let lastLeafY = 0;
+
+		if (leavesCount > 0) {
+			branch.leaves.forEach((leaf, lIdx) => {
+				const leafId = `leaf-l-${bIdx}-${lIdx}`;
+				const leafY = leftStartY + leftLeafIdx * 60;
+				if (lIdx === 0) firstLeafY = leafY;
+				if (lIdx === leavesCount - 1) lastLeafY = leafY;
+
+				nodes.push({
+					id: leafId,
+					type: "leaf",
+					label: leaf.text,
+					x: centerX - 360,
+					y: leafY,
+					seconds: leaf.seconds,
+				});
+				leftLeafIdx++;
 			});
+		} else {
+			const leafY = leftStartY + leftLeafIdx * 60;
+			firstLeafY = leafY;
+			lastLeafY = leafY;
+			leftLeafIdx++;
+		}
+
+		const branchY = (firstLeafY + lastLeafY) / 2;
+		nodes.push({
+			id: branchId,
+			type: "branch",
+			label: `📂 ${branch.title}`,
+			x: centerX - 180,
+			y: branchY,
 		});
+
+		const rootToBranchPath = `M ${centerX - 65} ${centerY} C ${centerX - 120} ${centerY}, ${centerX - 120} ${branchY}, ${centerX - 180 + 75} ${branchY}`;
+		links.push({
+			path: rootToBranchPath,
+			type: "root-branch",
+		});
+
+		if (leavesCount > 0) {
+			branch.leaves.forEach((_, lIdx) => {
+				const leafY = leftStartY + (leftLeafIdx - leavesCount + lIdx) * 60;
+				const branchToLeafPath = `M ${centerX - 180 - 75} ${branchY} C ${centerX - 260} ${branchY}, ${centerX - 260} ${leafY}, ${centerX - 360 + 70} ${leafY}`;
+				links.push({
+					path: branchToLeafPath,
+					type: "branch-leaf",
+				});
+			});
+		}
 	});
 
 	return { nodes, links, width, height };
