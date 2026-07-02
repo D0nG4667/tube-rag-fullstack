@@ -112,7 +112,7 @@ export default function ControlDrawer({
 		}
 	};
 
-	const handleIngest = async (e: React.FormEvent) => {
+	const handleIngest = async (e: React.SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		if (!urlInput.trim()) return;
 

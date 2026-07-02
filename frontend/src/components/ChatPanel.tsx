@@ -71,7 +71,7 @@ export default function ChatPanel({
 		chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, [messages.length, loading]);
 
-	const handleSend = async (e: React.FormEvent) => {
+	const handleSend = async (e: React.SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		if (!input.trim() || !videoId || loading) return;
 

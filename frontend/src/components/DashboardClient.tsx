@@ -1,7 +1,6 @@
 "use client";
 
 import {
-	AlertCircle,
 	BookOpen,
 	Brain,
 	BrainCircuit,
@@ -17,6 +16,9 @@ import {
 	Unlock,
 	Loader2,
 	X,
+	CheckCircle2,
+	XCircle,
+	Info,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -134,7 +136,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 		}
 	}, []);
 
-	const handleSaveKey = async (e: React.FormEvent) => {
+	const handleSaveKey = async (e: React.SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		if (!tempApiKey.trim() || !passphrase.trim()) return;
 		try {
@@ -164,7 +166,7 @@ export default function DashboardClient({ locale }: { locale: string }) {
 		}
 	};
 
-	const handleUnlockKey = async (e: React.FormEvent) => {
+	const handleUnlockKey = async (e: React.SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		const saved = localStorage.getItem("tuberag_encrypted_gemini_key");
 		if (!saved || !unlockPassphrase.trim()) return;
@@ -868,17 +870,30 @@ export default function DashboardClient({ locale }: { locale: string }) {
 				</DialogContent>
 			</Dialog>
 			{toastMessage && (
-				<div
-					className={`fixed bottom-6 right-6 z-[100] px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-slide-up ${
-						toastMessage.type === "success"
-							? "bg-green-950/20 border-green-500/30 text-green-400"
-							: toastMessage.type === "error"
-								? "bg-red-950/20 border-red-500/30 text-red-400"
-								: "bg-cyan-950/20 border-cyan-500/30 text-cyan-400"
-					}`}
-				>
-					<AlertCircle className="w-4 h-4 shrink-0" />
-					<span>{toastMessage.text}</span>
+				<div className="fixed bottom-6 right-6 z-[100] animate-slide-up">
+					<div
+						className={cn(
+							"px-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl flex items-center gap-3 text-xs font-semibold font-sans tracking-wide transition-all duration-300",
+							"bg-zinc-950/85 border-zinc-800/80 text-zinc-100",
+							toastMessage.type === "success" &&
+								"shadow-[0_0_20px_rgba(34,197,94,0.15)] border-green-500/25",
+							toastMessage.type === "error" &&
+								"shadow-[0_0_20px_rgba(239,68,68,0.15)] border-red-500/25",
+							toastMessage.type === "info" &&
+								"shadow-[0_0_20px_rgba(8,145,178,0.15)] border-cyan-500/25",
+						)}
+					>
+						{toastMessage.type === "success" && (
+							<CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 animate-bounce" />
+						)}
+						{toastMessage.type === "error" && (
+							<XCircle className="w-4 h-4 text-red-400 shrink-0 animate-pulse" />
+						)}
+						{toastMessage.type === "info" && (
+							<Info className="w-4 h-4 text-cyan-400 shrink-0 animate-pulse" />
+						)}
+						<span>{toastMessage.text}</span>
+					</div>
 				</div>
 			)}
 		</main>

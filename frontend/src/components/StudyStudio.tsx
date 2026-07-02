@@ -394,8 +394,8 @@ export default function StudyStudio({
 		setTimeout(() => setCopied(false), 2000);
 		onShowToast?.(
 			isRtl
-				? "📋 تم نسخ النص المنسق بنجاح!"
-				: "📋 Elegantly formatted text copied to clipboard!",
+				? "📋 تم نسخ ملخص الدراسة بنجاح!"
+				: "📋 Study insights copied to clipboard!",
 			"success",
 		);
 	};
@@ -569,6 +569,11 @@ export default function StudyStudio({
 			isRtl ? "🖨️ فتح نافذة الطباعة..." : "🖨️ Opening print dialog...",
 			"info",
 		);
+		const isMobile =
+			typeof navigator !== "undefined" &&
+			/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+				navigator.userAgent,
+			);
 		const printWindow = window.open("", "_blank");
 		if (!printWindow) return;
 
@@ -651,10 +656,10 @@ export default function StudyStudio({
 				<body>
 					${contentHtml}
 					<script>
-						window.onload = function() {
+						setTimeout(function() {
 							window.print();
-							setTimeout(function() { window.close(); }, 500);
-						};
+							${isMobile ? "" : "setTimeout(function() { window.close(); }, 500);"}
+						}, 250);
 					</script>
 				</body>
 			</html>
@@ -670,6 +675,11 @@ export default function StudyStudio({
 				: "🖨️ Opening Mindmap print dialog...",
 			"info",
 		);
+		const isMobile =
+			typeof navigator !== "undefined" &&
+			/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+				navigator.userAgent,
+			);
 		const svgEl = document.getElementById("mindmap-export-svg");
 		if (!svgEl) return;
 		const printWindow = window.open("", "_blank");
@@ -709,10 +719,10 @@ export default function StudyStudio({
 				<body>
 					${svgHtml}
 					<script>
-						window.onload = function() {
+						setTimeout(function() {
 							window.print();
-							setTimeout(function() { window.close(); }, 500);
-						};
+							${isMobile ? "" : "setTimeout(function() { window.close(); }, 500);"}
+						}, 250);
 					</script>
 				</body>
 			</html>
